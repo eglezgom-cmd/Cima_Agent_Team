@@ -1,0 +1,3270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CIMA Agent</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --pink:#CF2959;--black:#111111;--bg:#EFEFED;--white:#fff;
+  --gray:#888;--lgray:#C8C5BF;--card:#fff;
+  --green:#1D9E75;--blue:#185FA5;--amber:#BA7517;--red:#A32D2D;
+  --border:#E5E3DE;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--black);min-height:100vh}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:10px}
+.logo svg{flex-shrink:0}
+.logo-text{font-size:15px;font-weight:700;letter-spacing:0.12em;color:var(--black)}
+.logo-beta{font-size:10px;padding:2px 7px;border:1px solid var(--border);border-radius:20px;color:var(--gray);margin-left:4px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.api-status{font-size:11px;color:var(--gray);display:flex;align-items:center;gap:5px}
+.api-dot{width:6px;height:6px;border-radius:50%;background:var(--lgray)}
+.api-dot.ok{background:var(--green)}
+.api-dot.err{background:var(--red)}
+#api-key-btn{font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid var(--pink);background:transparent;cursor:pointer;color:var(--pink);font-weight:500}
+#api-key-btn:hover{background:var(--bg)}
+
+/* NAV */
+.nav{display:flex;border-bottom:1px solid var(--border);background:var(--white);overflow-x:auto;padding:0 24px}
+.nav-btn{font-size:13px;padding:12px 16px;border:none;background:transparent;cursor:pointer;color:var(--gray);border-bottom:2px solid transparent;white-space:nowrap;font-family:inherit;transition:color 0.15s}
+.nav-btn.active{color:var(--pink);border-bottom-color:var(--pink);font-weight:500}
+.nav-btn:hover:not(.active){color:var(--black)}
+
+/* MAIN */
+.main{max-width:1100px;margin:0 auto;padding:24px}
+.tab{display:none}.tab.active{display:block}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:24px}
+.stat{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.stat-n{font-size:24px;font-weight:700}
+.stat-l{font-size:11px;color:var(--gray);margin-top:3px}
+
+/* FILTERS */
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.chip{font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--gray);font-family:inherit;transition:all 0.15s}
+.chip:hover{border-color:var(--black);color:var(--black)}
+.chip.active{background:var(--black);color:var(--white);border-color:var(--black)}
+.chip.tier-disponible.active{background:var(--green);border-color:var(--green)}
+.chip.tier-alcanzable.active{background:var(--blue);border-color:var(--blue)}
+.chip.tier-medio.active{background:var(--amber);border-color:var(--amber)}
+.chip.tier-elite.active{background:var(--red);border-color:var(--red)}
+.search-input{padding:7px 12px;border-radius:20px;border:1px solid var(--border);background:var(--white);font-size:12px;font-family:inherit;color:var(--black);width:180px;outline:none}
+.search-input:focus{border-color:var(--pink)}
+
+/* GRID */
+.profiles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.pcard{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px;transition:all 0.2s;cursor:default}
+.pcard:hover{border-color:var(--lgray)}
+.pcard.status-confirmado{border-left:3px solid #1D9E75}
+.pcard.status-en_contacto{border-left:3px solid #BA7517}
+.pcard.status-descartado{opacity:0.42;filter:grayscale(0.7)}
+.pcard.status-nuevo{}
+.status-pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:500;padding:2px 7px;border-radius:10px;margin-left:6px}
+.pcard-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;color:var(--white)}
+.pcard-name{font-size:14px;font-weight:600;color:var(--black);line-height:1.3}
+.pcard-role{font-size:11px;color:var(--gray);margin-top:2px}
+.ptags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+.ptag{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600}
+.ptag-tier{color:var(--white)}
+.ptag-event{background:var(--bg);color:var(--gray);border:1px solid var(--border)}
+.ptag-type{color:var(--white)}
+.pcard-hook{font-size:12px;color:#555;line-height:1.5;margin-bottom:10px}
+.rep-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.rep-bar{flex:1;height:3px;background:var(--bg);border-radius:2px;overflow:hidden}
+.rep-fill{height:3px;border-radius:2px}
+.rep-pct{font-size:10px;color:var(--gray);white-space:nowrap}
+.pcard-actions{display:flex;gap:6px;border-top:1px solid var(--border);padding-top:10px}
+.pact{flex:1;font-size:10px;padding:6px 4px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--gray);font-family:inherit;text-align:center;transition:all 0.15s;white-space:nowrap}
+.pact:hover{background:var(--bg);color:var(--black)}
+.pact.primary{background:var(--pink);color:var(--white);border-color:var(--pink)}
+.pact.primary:hover{opacity:0.85}
+
+/* STATUS BADGE */
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px}
+
+/* SECTION HEADERS */
+.section-h{display:flex;align-items:center;gap:10px;margin:24px 0 12px}
+.tier-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:8px;color:var(--white);margin-bottom:12px}
+.tier-bar-title{font-size:13px;font-weight:700;letter-spacing:0.06em}
+.tier-bar-sub{font-size:12px;opacity:0.85}
+.tier-bar-count{margin-left:auto;font-size:12px;opacity:0.85}
+
+/* CHAT */
+.chat-container{max-width:800px;margin:0 auto}
+.chat-header{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:16px}
+.chat-header-title{font-size:14px;font-weight:600;margin-bottom:4px}
+.chat-header-sub{font-size:12px;color:var(--gray)}
+.quick-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.quick-btn{font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--gray);font-family:inherit}
+.quick-btn:hover{background:var(--bg);color:var(--black)}
+.messages{display:flex;flex-direction:column;gap:12px;margin-bottom:16px;min-height:200px}
+.msg{padding:14px 16px;border-radius:12px;font-size:13px;line-height:1.65;max-width:88%}
+.msg.user{background:var(--black);color:var(--white);margin-left:auto;border-radius:12px 12px 4px 12px}
+.msg.ai{background:var(--white);border:1px solid var(--border);color:var(--black);border-radius:12px 12px 12px 4px}
+.msg-label{font-size:10px;font-weight:700;letter-spacing:0.1em;color:var(--pink);margin-bottom:6px}
+.msg.thinking{color:var(--gray);font-style:italic;border:1px dashed var(--border)}
+.chat-input-area{display:flex;gap:8px;align-items:flex-end}
+.chat-input-area textarea{flex:1;border:1px solid var(--border);border-radius:10px;padding:12px;font-size:13px;font-family:inherit;resize:none;background:var(--white);color:var(--black);outline:none;min-height:48px;max-height:140px;line-height:1.5}
+.chat-input-area textarea:focus{border-color:var(--pink)}
+.send-btn{padding:12px 20px;background:var(--pink);color:var(--white);border:none;border-radius:10px;cursor:pointer;font-size:13px;font-family:inherit;white-space:nowrap;height:48px}
+.send-btn:disabled{opacity:0.5;cursor:not-allowed}
+
+/* OUTREACH */
+.outreach-form{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.form-group label{display:block;font-size:11px;color:var(--gray);margin-bottom:5px;font-weight:500}
+.form-group select,.form-group input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--white);color:var(--black);outline:none}
+.form-group select:focus,.form-group input:focus{border-color:var(--pink)}
+.gen-btn{width:100%;padding:12px;background:var(--pink);color:var(--white);border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600}
+.gen-btn:hover{opacity:0.9}
+.gen-btn:disabled{opacity:0.5;cursor:not-allowed}
+.outreach-result{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px;display:none}
+.outreach-label{font-size:10px;font-weight:700;letter-spacing:0.1em;color:var(--pink);margin-bottom:10px}
+.outreach-text{font-size:13px;line-height:1.75;white-space:pre-wrap;color:var(--black)}
+.outreach-actions{display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.out-btn{flex:1;padding:9px;border:1px solid var(--border);border-radius:8px;background:transparent;font-size:12px;cursor:pointer;color:var(--gray);font-family:inherit}
+.out-btn:hover{background:var(--bg);color:var(--black)}
+
+/* DISCOVERY */
+.discovery-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.disc-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px}
+.disc-card-title{font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.signal-item{padding:10px 0;border-bottom:1px solid var(--border);display:flex;gap:10px}
+.signal-item:last-of-type{border-bottom:none}
+.sig-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.sig-text{font-size:12px;color:var(--black);line-height:1.5}
+.sig-meta{font-size:10px;color:var(--gray);margin-top:2px}
+.scan-btn{width:100%;padding:11px;border:1px solid var(--border);border-radius:8px;background:transparent;font-size:12px;cursor:pointer;color:var(--gray);font-family:inherit;margin-top:12px;transition:all 0.15s}
+.scan-btn:hover{background:var(--bg);color:var(--black)}
+.scan-btn:disabled{opacity:0.5;cursor:not-allowed}
+
+/* PROFILE DETAIL MODAL */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;visibility:hidden;pointer-events:none}
+.modal-overlay.open{visibility:visible;pointer-events:all}
+.modal{background:var(--white);border-radius:16px;padding:28px;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;position:relative}
+.modal-close{position:absolute;top:16px;right:16px;background:transparent;border:none;font-size:20px;cursor:pointer;color:var(--gray);line-height:1}
+.modal-name{font-size:20px;font-weight:700;margin-bottom:4px}
+.modal-role{font-size:13px;color:var(--gray);margin-bottom:16px}
+.modal-section{margin-bottom:16px}
+.modal-section-title{font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--gray);margin-bottom:8px;text-transform:uppercase}
+.field-row{display:flex;gap:8px;margin-bottom:6px;align-items:flex-start}
+.field-label{font-size:11px;color:var(--gray);min-width:90px;padding-top:1px}
+.field-val{font-size:12px;color:var(--black);flex:1}
+.field-input{flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;color:var(--black);background:var(--white);outline:none}
+.field-input:focus{border-color:var(--pink)}
+.field-textarea{flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;color:var(--black);background:var(--white);resize:vertical;outline:none;min-height:80px}
+.field-textarea:focus{border-color:var(--pink)}
+.save-btn{width:100%;padding:11px;background:var(--pink);color:var(--white);border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600;margin-top:16px}
+.save-btn:hover{opacity:0.9}
+.history-item{background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:6px;font-size:12px;line-height:1.5}
+.add-history-btn{font-size:11px;padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;color:var(--gray);font-family:inherit}
+
+/* API KEY MODAL */
+.apikey-modal{background:var(--white);border-radius:16px;padding:28px;width:100%;max-width:460px;position:relative;z-index:10000}
+.apikey-modal h2{font-size:18px;font-weight:700;margin-bottom:8px}
+.apikey-modal p{font-size:13px;color:var(--gray);margin-bottom:16px;line-height:1.6}
+.apikey-input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;margin-bottom:12px;outline:none}
+.apikey-input:focus{border-color:var(--pink)}
+.apikey-btn{width:100%;padding:11px;background:var(--pink);color:var(--white);border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:48px 24px;color:var(--gray)}
+.empty-title{font-size:15px;font-weight:500;margin-bottom:8px;color:var(--black)}
+.empty-sub{font-size:13px}
+
+@media(max-width:640px){
+  .stats{grid-template-columns:repeat(3,1fr)}
+  .form-grid{grid-template-columns:1fr}
+  .discovery-grid{grid-template-columns:1fr}
+  .main{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- API key handled server-side -->
+
+<!-- PROFILE DETAIL MODAL -->
+<div class="modal-overlay" id="profile-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeProfileModal()">&times;</button>
+    <div id="profile-modal-content"></div>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="logo">
+    <svg width="32" height="20" viewBox="0 0 46 30" fill="none">
+      <path d="M2 28L11 5L17 16L23 28Z" fill="#CF2959" opacity="0.5"/>
+      <path d="M2 28L11 5L20 28Z" fill="#CF2959" opacity="0.8"/>
+      <path d="M16 28L23 4L30 28Z" fill="#CF2959"/>
+      <path d="M22 28L23 18L24 28Z" fill="#EFEFED"/>
+      <path d="M27 28L34 8L41 28Z" fill="#CF2959" opacity="0.7"/>
+      <path d="M34 28L35 20L38 28Z" fill="#EFEFED"/>
+    </svg>
+    <span class="logo-text">CIMA</span>
+    <span class="logo-beta">agent v1</span>
+  </div>
+  <div class="topbar-right">
+    <div class="api-status">
+      <div class="api-dot ok"></div>
+      <span style="font-size:11px;color:var(--gray)">CIMA Agent activo</span>
+    </div>
+    <button id="api-key-btn" onclick="sessionStorage.clear();window.location.href='/'">Cerrar sesion</button>
+  </div>
+</div>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="showTab('discovery',this)">Discovery</button>
+  <button class="nav-btn" onclick="showTab('profiles',this)">Perfiles</button>
+  <button class="nav-btn" onclick="showTab('agent',this)">Agente IA</button>
+  <button class="nav-btn" onclick="showTab('outreach',this)">Outreach</button>
+  <button class="nav-btn" onclick="showTab('pipeline',this)">Pipeline</button>
+  <span style="width:1px;height:20px;background:var(--border);display:inline-block;align-self:center;margin:0 4px"></span>
+  <button class="nav-btn" style="color:var(--pink)" onclick="showTab('ideas',this)">Ideas CIMA</button>
+  <button class="nav-btn" style="color:var(--pink)" onclick="showTab('dashboard',this)">Dashboard</button>
+  <button class="nav-btn" style="color:var(--pink)" onclick="showTab('contacts',this)">Contactos</button>
+  <button class="nav-btn" style="color:var(--pink)" onclick="showTab('directorio',this)">Directorio</button>
+</div>
+
+<div class="main">
+
+<!-- TAB: DISCOVERY -->
+<div id="tab-discovery" class="tab active">
+  <div class="stats" id="stats-row"></div>
+  <div class="discovery-grid">
+    <div class="disc-card">
+      <div class="disc-card-title">
+        <div class="pulse"></div>
+        Señales de esta semana
+      </div>
+      <div id="signals-list">
+        <div class="signal-item">
+          <div class="sig-dot" style="background:var(--green)"></div>
+          <div>
+            <div class="sig-text"><strong>Marian Rojas Estapé</strong> — muy activa en medios con nuevo libro. Momento óptimo de visibilidad y contacto.</div>
+            <div class="sig-meta">Instagram · Fit 96% · Candidata: Ponencia</div>
+          </div>
+        </div>
+        <div class="signal-item">
+          <div class="sig-dot" style="background:#185FA5"></div>
+          <div>
+            <div class="sig-text"><strong>Javier Goyeneche</strong> (Ecoalf) — aparición en podcast Emprendedores. Activo en comunicación este mes.</div>
+            <div class="sig-meta">Podcast · Fit 85% · Candidato: Cena + Ponencia</div>
+          </div>
+        </div>
+        <div class="signal-item">
+          <div class="sig-dot" style="background:var(--amber)"></div>
+          <div>
+            <div class="sig-text"><strong>Sara García Alonso</strong> — confirmada en FOMOfest 2026. Alta visibilidad nacional. Buen momento para activar.</div>
+            <div class="sig-meta">Prensa · Fit 88% · Candidata: Ponencia</div>
+          </div>
+        </div>
+      </div>
+      <button class="scan-btn" id="scan-btn" onclick="runScan()">Escanear fuentes ahora (prensa · podcasts · RRSS)</button>
+    </div>
+    <div class="disc-card">
+      <div class="disc-card-title">Automatización semanal</div>
+      <div style="font-size:12px;color:var(--gray);line-height:1.7;margin-bottom:12px">
+        El agente escanea cada lunes a las 9h prensa española, Reuters, podcasts y RRSS de los perfiles activos. Genera un informe con señales nuevas y actualiza prioridades de contacto.
+      </div>
+      <div style="background:var(--bg);border-radius:8px;padding:12px;font-size:12px;margin-bottom:10px">
+        <div style="font-weight:600;margin-bottom:4px">Próximo scan automático</div>
+        <div style="color:var(--gray)" id="next-scan-date">Calculando...</div>
+      </div>
+      <button class="scan-btn" onclick="askAgent('Genera el informe semanal completo de señales de los perfiles CIMA buscando en prensa española, LinkedIn y podcasts de los últimos 7 días')">Ver informe completo en el agente &rarr;</button>
+      <button class="scan-btn" style="margin-top:6px" onclick="askAgent('Sugiere 5 perfiles nuevos que encajen con CIMA basándote en noticias recientes del ecosistema emprendedor español 2026')">Descubrir nuevos perfiles &rarr;</button>
+    </div>
+  </div>
+  <div style="font-size:13px;font-weight:600;margin-bottom:12px">Confirmados próximas ediciones</div>
+  <div id="confirmed-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px"></div>
+</div>
+
+<!-- TAB: PROFILES -->
+<div id="tab-profiles" class="tab">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+    <div style="font-size:13px;color:var(--gray)" id="profile-count-label">Cargando perfiles...</div>
+    <input class="search-input" placeholder="Buscar perfil..." id="search-input" oninput="renderProfiles()">
+  </div>
+  <div class="filters" id="filter-row"></div>
+  <div id="profiles-container"></div>
+</div>
+
+<!-- TAB: AGENT -->
+<div id="tab-agent" class="tab">
+  <div class="chat-container">
+    <div class="chat-header">
+      <div class="chat-header-title">Agente CIMA</div>
+      <div class="chat-header-sub">Busca señales, sugiere accesos, redacta outreach, prepara briefings. Usa búsqueda web en tiempo real.</div>
+      <div class="quick-btns">
+        <button class="quick-btn" onclick="askAgent('Busca señales recientes de Marian Rojas Estapé en prensa y redes sociales')">Señales Marian Rojas</button>
+        <button class="quick-btn" onclick="askAgent('Cuál es la vía más corta para llegar a Toni Nadal y invitarle a CIMA?')">Acceso a Toni Nadal</button>
+        <button class="quick-btn" onclick="askAgent('Sugiere 5 perfiles nuevos para cena CIMA, founders entre 30-45 años, con historia de impacto y perfil conversacional')">Nuevos perfiles cena</button>
+        <button class="quick-btn" onclick="askAgent('Prepara el briefing completo para el evento con Olaf Díaz-Pintado en mayo 2026: contexto de su carrera, temas a tocar, preguntas clave para el Q&A')">Briefing Olaf Mayo</button>
+        <button class="quick-btn" onclick="askAgent('Qué está pasando esta semana en el ecosistema emprendedor español que sea relevante para CIMA?')">Noticias ecosistema</button>
+      </div>
+    </div>
+    <div class="messages" id="chat-messages">
+      <div class="msg ai">
+        <div class="msg-label">CIMA AGENT</div>
+        Hola. Soy el agente de inteligencia de CIMA. Con búsqueda web en tiempo real puedo:<br><br>
+        · Rastrear señales recientes de cualquier perfil (prensa, podcasts, RRSS)<br>
+        · Sugerir la vía más corta para llegar a alguien<br>
+        · Redactar outreach personalizado y auténtico<br>
+        · Preparar el briefing antes de un evento<br>
+        · Descubrir perfiles nuevos del ecosistema<br><br>
+        ¿Por dónde empezamos?
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <textarea id="chat-input" placeholder="Pregunta sobre perfiles, outreach, señales..." rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendChat()">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: OUTREACH -->
+<div id="tab-outreach" class="tab">
+  <div style="max-width:700px;margin:0 auto">
+    <div class="outreach-form">
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px">Generador de outreach</div>
+      <div style="font-size:12px;color:var(--gray);margin-bottom:16px">Selecciona el perfil, tipo de evento y canal. El agente escribe el mensaje en segundos.</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Perfil</label>
+          <select id="out-profile"></select>
+        </div>
+        <div class="form-group">
+          <label>Tipo de evento</label>
+          <select id="out-type">
+            <option value="ponencia">Ponencia (~100 personas, 45min + networking)</option>
+            <option value="cena">Cena CIMA (15 personas, formato íntimo, sin PowerPoints)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Canal</label>
+          <select id="out-channel">
+            <option>Email directo</option>
+            <option>LinkedIn DM</option>
+            <option>Instagram DM</option>
+            <option>WhatsApp (vía contacto común)</option>
+            <option>Twitter/X DM</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Vía de acceso</label>
+          <select id="out-via">
+            <option>Contacto directo (sin intermediario)</option>
+            <option>A través de contacto en común</option>
+            <option>Vía manager / representante</option>
+            <option>Evento donde coincidiremos</option>
+            <option>Cold outreach</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label>Contexto adicional (opcional)</label>
+        <input type="text" id="out-context" placeholder="Ej: acabamos de ver su podcast, tenemos contacto en común con X...">
+      </div>
+      <button class="gen-btn" id="gen-btn" onclick="generateOutreach()">Generar outreach personalizado</button>
+    </div>
+    <div class="outreach-result" id="outreach-result">
+      <div class="outreach-label">CIMA AGENT — OUTREACH GENERADO</div>
+      <div class="outreach-text" id="outreach-text"></div>
+      <div class="outreach-actions">
+        <button class="out-btn" onclick="copyOutreach()">Copiar texto</button>
+        <button class="out-btn" onclick="generateAlternative('corta')">Versión más corta</button>
+        <button class="out-btn" onclick="generateAlternative('formal')">Más formal</button>
+        <button class="out-btn" onclick="generateAlternative('cercana')">Más cercana</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: PIPELINE -->
+<div id="tab-pipeline" class="tab">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px">
+    <div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:2px">Pipeline de outreach</div>
+      <div style="font-size:12px;color:var(--gray)">Todos los contactos iniciados · tasa de conversión · seguimiento pendiente</div>
+    </div>
+    <button onclick="addPipelineEntry()" style="padding:9px 16px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500">+ Registrar contacto</button>
+  </div>
+
+  <div id="pipeline-stats" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px"></div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:12px">Conversión por canal</div>
+      <div id="pipeline-by-channel"></div>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:12px">Seguimiento pendiente</div>
+      <div id="pipeline-followup"></div>
+    </div>
+  </div>
+
+  <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);background:var(--bg)">
+          <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray);font-size:11px">Perfil</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray);font-size:11px">Tipo</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray);font-size:11px">Canal</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray);font-size:11px">Fecha</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray);font-size:11px">Estado</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--gray);font-size:11px">Seguimiento</th>
+          <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--gray);font-size:11px"></th>
+        </tr>
+      </thead>
+      <tbody id="pipeline-table"></tbody>
+    </table>
+  </div>
+
+  <!-- Add pipeline entry modal -->
+  <div id="pipeline-form" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--white);border-radius:16px;padding:24px;width:100%;max-width:480px">
+      <div style="font-size:15px;font-weight:600;margin-bottom:16px">Registrar contacto</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group"><label>Perfil</label><select id="pl-profile" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit"></select></div>
+        <div class="form-group"><label>Evento</label><select id="pl-event" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit"><option value="ponencia">Ponencia</option><option value="cena">Cena</option></select></div>
+        <div class="form-group"><label>Canal</label><select id="pl-channel" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit"><option>email</option><option>linkedin</option><option>instagram</option><option>whatsapp</option><option>twitter</option></select></div>
+        <div class="form-group"><label>Estado inicial</label><select id="pl-status" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit"><option value="enviado">Enviado</option><option value="respuesta_positiva">Respuesta positiva</option><option value="respuesta_negativa">Respuesta negativa</option><option value="confirmado">Confirmado</option><option value="sin_respuesta">Sin respuesta</option></select></div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px"><label>Seguimiento — próximo paso</label><input type="text" id="pl-next" placeholder="Ej: llamar en 2 semanas, esperar respuesta..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit"></div>
+      <div class="form-group" style="margin-bottom:16px"><label>Fecha seguimiento</label><input type="date" id="pl-date" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit"></div>
+      <div style="display:flex;gap:8px">
+        <button onclick="savePipelineEntry()" style="flex:1;padding:10px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500">Guardar</button>
+        <button onclick="document.getElementById('pipeline-form').style.display='none'" style="padding:10px 16px;border:1px solid var(--border);border-radius:8px;background:none;font-size:13px;cursor:pointer;font-family:inherit;color:var(--gray)">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: IDEAS CIMA -->
+<div id="tab-ideas" class="tab">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px">
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px">Generador de ideas</div>
+      <div style="font-size:12px;color:var(--gray);margin-bottom:14px">El agente busca referentes externos y genera ideas basándose en tu contexto actual de CIMA.</div>
+      <div class="form-group" style="margin-bottom:10px"><label>¿Qué está funcionando bien en CIMA ahora mismo?</label><textarea id="ideas-good" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;resize:vertical;min-height:70px;outline:none" placeholder="Sold out, comunidad activa, calidad ponentes..."></textarea></div>
+      <div class="form-group" style="margin-bottom:10px"><label>¿Qué crees que falla o tiene margen de mejora?</label><textarea id="ideas-bad" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;resize:vertical;min-height:70px;outline:none" placeholder="Empaquetado, retención post-evento, marca visual..."></textarea></div>
+      <div class="form-group" style="margin-bottom:14px"><label>¿En qué área quieres ideas?</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px" id="ideas-areas">
+          <button class="chip active" data-area="empaquetado" onclick="toggleArea(this)">Empaquetado</button>
+          <button class="chip active" data-area="marca" onclick="toggleArea(this)">Marca CIMA</button>
+          <button class="chip active" data-area="eventos" onclick="toggleArea(this)">Eventos</button>
+          <button class="chip active" data-area="ambassadors" onclick="toggleArea(this)">Ambassadors</button>
+          <button class="chip active" data-area="marketing" onclick="toggleArea(this)">Marketing</button>
+          <button class="chip active" data-area="competencia" onclick="toggleArea(this)">Competencia</button>
+        </div>
+      </div>
+      <button onclick="generateIdeas()" id="ideas-btn" style="width:100%;padding:11px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500">Generar ideas (activación manual)</button>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px;overflow-y:auto;max-height:520px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;color:var(--pink);margin-bottom:10px">IDEAS GENERADAS</div>
+      <div id="ideas-output" style="font-size:13px;color:var(--gray);line-height:1.6">Introduce el contexto y pulsa "Generar ideas" para activar el análisis.</div>
+    </div>
+  </div>
+  <div id="ideas-saved" style="display:none;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600">Ideas guardadas</div>
+      <button onclick="saveIdeas()" style="font-size:11px;padding:5px 12px;background:var(--pink);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit">Guardar estas ideas</button>
+    </div>
+    <div id="ideas-saved-list" style="font-size:12px;color:var(--gray)"></div>
+  </div>
+</div>
+
+<!-- TAB: DASHBOARD -->
+<div id="tab-dashboard" class="tab">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px">
+    <div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:2px">Dashboard CIMA</div>
+      <div style="font-size:12px;color:var(--gray)">Introduce los datos a mano · visualización automática · exportable a PDF</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="showDashboardEdit()" style="padding:9px 16px;border:1px solid var(--border);border-radius:8px;background:transparent;font-size:12px;cursor:pointer;font-family:inherit;color:var(--gray)">Editar datos</button>
+      <button onclick="exportDashboardPDF()" id="dash-export-btn" style="padding:9px 16px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500">Exportar PDF</button>
+    </div>
+  </div>
+
+  <div id="dashboard-content"></div>
+
+  <!-- Edit modal -->
+  <div id="dash-edit-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center;padding:20px;overflow-y:auto">
+    <div style="background:var(--white);border-radius:16px;padding:24px;width:100%;max-width:560px;margin:auto">
+      <div style="font-size:15px;font-weight:600;margin-bottom:16px">Editar datos de CIMA</div>
+      <div id="dash-edit-fields"></div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button onclick="saveDashboardData()" style="flex:1;padding:10px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500">Guardar</button>
+        <button onclick="document.getElementById('dash-edit-modal').style.display='none'" style="padding:10px 16px;border:1px solid var(--border);border-radius:8px;background:none;font-size:13px;cursor:pointer;font-family:inherit;color:var(--gray)">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: CONTACTOS MANUALES -->
+<div id="tab-contacts" class="tab">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px">
+    <div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:2px">Contactos</div>
+      <div style="font-size:12px;color:var(--gray)">Red personal · candidatos · puentes de acceso</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input class="search-input" placeholder="Buscar contacto..." id="contacts-search" oninput="renderContacts()">
+      <button onclick="openContactForm()" style="padding:9px 16px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500">+ Añadir contacto</button>
+    </div>
+  </div>
+
+  <div class="filters" style="margin-bottom:16px">
+    <button class="chip active" onclick="setContactFilter('all',this)">Todos</button>
+    <button class="chip" onclick="setContactFilter('candidato',this)" style="color:#CF2959;border-color:#CF2959">Candidatos CIMA</button>
+    <button class="chip" onclick="setContactFilter('red',this)" style="color:#185FA5;border-color:#185FA5">Red personal</button>
+    <button class="chip" onclick="setContactFilter('puente',this)" style="color:#1D9E75;border-color:#1D9E75">Puentes de acceso</button>
+    <span style="width:1px;height:20px;background:var(--border);display:inline-block;margin:0 4px;align-self:center"></span>
+    <button class="chip" onclick="setContactWarmth('all',this)">Cualquier calidez</button>
+    <button class="chip" onclick="setContactWarmth('calido',this)">Cálido</button>
+    <button class="chip" onclick="setContactWarmth('tibio',this)">Tibio</button>
+    <button class="chip" onclick="setContactWarmth('frio',this)">Frío</button>
+  </div>
+
+  <div id="contacts-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px"></div>
+  <div id="contacts-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px"></div>
+
+  <!-- Contact form modal -->
+  <div id="contact-form-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;padding:20px;overflow-y:auto">
+    <div style="background:var(--white);border-radius:16px;padding:24px;width:100%;max-width:520px;margin:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:15px;font-weight:600" id="contact-form-title">Añadir contacto</div>
+        <button onclick="closeContactForm()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray);line-height:1">&times;</button>
+      </div>
+      <input type="hidden" id="cf-id">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="form-group"><label>Nombre *</label><input type="text" id="cf-name" placeholder="Nombre completo" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;outline:none"></div>
+        <div class="form-group"><label>Empresa / organización</label><input type="text" id="cf-company" placeholder="Empresa" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;outline:none"></div>
+        <div class="form-group"><label>Rol / cargo</label><input type="text" id="cf-role" placeholder="CEO, Founder, Director..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;outline:none"></div>
+        <div class="form-group"><label>Sector</label><input type="text" id="cf-sector" placeholder="Tech, Finanzas, Deporte..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;outline:none"></div>
+      </div>
+      <div style="font-size:11px;font-weight:600;color:var(--gray);margin-bottom:8px;letter-spacing:0.06em">CONTACTO</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group"><label>Email</label><input type="email" id="cf-email" placeholder="email@..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;outline:none"></div>
+        <div class="form-group"><label>Teléfono</label><input type="tel" id="cf-phone" placeholder="+34 6xx xxx xxx" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;outline:none"></div>
+        <div class="form-group"><label>LinkedIn</label><input type="text" id="cf-linkedin" placeholder="linkedin.com/in/..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;outline:none"></div>
+        <div class="form-group"><label>Instagram / Twitter</label><input type="text" id="cf-social" placeholder="@usuario" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;outline:none"></div>
+      </div>
+      <div style="font-size:11px;font-weight:600;color:var(--gray);margin-bottom:8px;letter-spacing:0.06em">CATEGORIZACIÓN</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="form-group"><label>Categoría</label>
+          <select id="cf-category" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit">
+            <option value="red">Red personal</option>
+            <option value="candidato">Candidato CIMA</option>
+            <option value="puente">Puente de acceso</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Calidez de la relación</label>
+          <select id="cf-warmth" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit">
+            <option value="calido">Cálido — contacto directo frecuente</option>
+            <option value="tibio">Tibio — nos conocemos, poca frecuencia</option>
+            <option value="frio">Frío — contacto puntual o indirecto</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="form-group"><label>Cómo os conocéis</label><input type="text" id="cf-how" placeholder="Ej: coincidimos en FOMOfest 2025..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;outline:none"></div>
+        <div class="form-group"><label>¿Puente hacia quién?</label><input type="text" id="cf-bridge" placeholder="Ej: amigo de Toni Nadal..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;outline:none"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:16px"><label>Notas libres</label><textarea id="cf-notes" placeholder="Contexto, ideas, próximos pasos..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;resize:vertical;min-height:70px;outline:none"></textarea></div>
+      <div style="display:flex;gap:8px">
+        <button onclick="saveContact()" style="flex:1;padding:10px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500">Guardar contacto</button>
+        <button onclick="closeContactForm()" style="padding:10px 16px;border:1px solid var(--border);border-radius:8px;background:none;font-size:13px;cursor:pointer;font-family:inherit;color:var(--gray)">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: DIRECTORIO -->
+<div id="tab-directorio" class="tab">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px">
+    <div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:2px">Directorio completo</div>
+      <div style="font-size:12px;color:var(--gray)">Perfiles confirmados + contactos manuales · medios de contacto · accesibilidad</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <input class="search-input" placeholder="Buscar..." id="dir-search" oninput="renderDirectorio()">
+      <button onclick="exportDirectorio()" style="padding:9px 16px;border:1px solid var(--border);border-radius:8px;background:transparent;font-size:12px;cursor:pointer;font-family:inherit;color:var(--gray)">Exportar CSV</button>
+    </div>
+  </div>
+
+  <div class="filters" style="margin-bottom:16px">
+    <button class="chip active" onclick="setDirFilter('all',this)">Todos</button>
+    <button class="chip" onclick="setDirFilter('perfil',this)">Perfiles CIMA</button>
+    <button class="chip" onclick="setDirFilter('contacto',this)">Contactos manuales</button>
+    <span style="width:1px;height:20px;background:var(--border);display:inline-block;margin:0 4px;align-self:center"></span>
+    <button class="chip" onclick="setDirFilter('has-email',this)">Tiene email</button>
+    <button class="chip" onclick="setDirFilter('has-phone',this)">Tiene teléfono</button>
+    <button class="chip" onclick="setDirFilter('has-linkedin',this)">Tiene LinkedIn</button>
+  </div>
+
+  <div id="dir-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px"></div>
+
+  <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse;font-size:12px" id="dir-table">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);background:var(--bg)">
+          <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--gray);font-weight:600">Nombre</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--gray);font-weight:600">Rol · Empresa</th>
+          <th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--gray);font-weight:600">Email</th>
+          <th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--gray);font-weight:600">Teléfono</th>
+          <th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--gray);font-weight:600">LinkedIn</th>
+          <th style="padding:10px 14px;text-align:center;font-size:11px;color:var(--gray);font-weight:600">RRSS</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--gray);font-weight:600">Accesibilidad</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;color:var(--gray);font-weight:600">Tipo</th>
+        </tr>
+      </thead>
+      <tbody id="dir-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TAB: MIS CONTACTOS -->
+<div id="tab-contacts" class="tab">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px">
+    <div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:2px">Mis contactos</div>
+      <div style="font-size:12px;color:var(--gray)">Tu red personal · algunos pueden ser candidatos a CIMA o puentes de acceso</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <input class="search-input" id="contacts-search" placeholder="Buscar contacto..." oninput="renderContacts()">
+      <button onclick="openContactForm()" style="padding:9px 16px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500">+ Añadir contacto</button>
+    </div>
+  </div>
+
+  <div class="filters" id="contacts-filters" style="margin-bottom:16px">
+    <button class="chip active" onclick="setContactFilter('all',this)">Todos</button>
+    <button class="chip" onclick="setContactFilter('candidato_cima',this)" style="color:var(--pink);border-color:var(--pink)">Candidato CIMA</button>
+    <button class="chip" onclick="setContactFilter('puente',this)" style="color:#185FA5;border-color:#185FA5">Puente</button>
+    <button class="chip" onclick="setContactFilter('red',this)">Solo red</button>
+    <span style="width:1px;height:20px;background:var(--border);display:inline-block;margin:0 4px"></span>
+    <button class="chip" onclick="setContactFilter('caliente',this)" style="color:#1D9E75;border-color:#1D9E75">Caliente</button>
+    <button class="chip" onclick="setContactFilter('templado',this)" style="color:#BA7517;border-color:#BA7517">Templado</button>
+    <button class="chip" onclick="setContactFilter('frio',this)" style="color:#888;border-color:#888">Frío</button>
+  </div>
+
+  <div id="contacts-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px"></div>
+
+  <!-- Contact form modal -->
+  <div id="contact-form-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center;padding:20px;overflow-y:auto">
+    <div style="background:var(--white);border-radius:16px;padding:24px;width:100%;max-width:520px;position:relative;margin:auto">
+      <button onclick="closeContactForm()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray)">&times;</button>
+      <div style="font-size:15px;font-weight:600;margin-bottom:16px" id="contact-form-title">Añadir contacto</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="form-group" style="grid-column:1/-1"><label>Nombre completo *</label><input type="text" id="cf-name" placeholder="Nombre y apellidos" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none"></div>
+        <div class="form-group"><label>Rol / Cargo</label><input type="text" id="cf-role" placeholder="CEO, Fundador..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none"></div>
+        <div class="form-group"><label>Empresa</label><input type="text" id="cf-company" placeholder="Nombre empresa" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none"></div>
+        <div class="form-group"><label>Email</label><input type="email" id="cf-email" placeholder="email@ejemplo.com" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none"></div>
+        <div class="form-group"><label>Teléfono</label><input type="tel" id="cf-phone" placeholder="+34 600 000 000" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none"></div>
+        <div class="form-group"><label>LinkedIn</label><input type="text" id="cf-linkedin" placeholder="linkedin.com/in/..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none"></div>
+        <div class="form-group"><label>Instagram / Twitter</label><input type="text" id="cf-social" placeholder="@usuario" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="form-group">
+          <label>Categoría</label>
+          <select id="cf-category" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none">
+            <option value="red">Solo red personal</option>
+            <option value="candidato_cima">Candidato a CIMA</option>
+            <option value="puente">Puente de acceso</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Temperatura de relación</label>
+          <select id="cf-warmth" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none">
+            <option value="caliente">Caliente — contacto frecuente</option>
+            <option value="templado">Templado — contacto ocasional</option>
+            <option value="frio">Frío — nos conocemos, poco trato</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Contexto de la relación</label>
+        <input type="text" id="cf-context" placeholder="Ej: Coincidimos en FOMOfest, amigo de Íñigo, ex-compañero de..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+
+      <div class="form-group" style="margin-bottom:10px">
+        <label>¿Puede ser puente para llegar a alguien?</label>
+        <input type="text" id="cf-bridge" placeholder="Ej: conoce a Juan Roig, cercano al ecosistema Lanzadera..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+
+      <div class="form-group" style="margin-bottom:16px">
+        <label>Notas libres</label>
+        <textarea id="cf-notes" placeholder="Cualquier detalle relevante..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;min-height:60px;outline:none"></textarea>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <button onclick="saveContact()" style="flex:1;padding:11px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500">Guardar contacto</button>
+        <button onclick="closeContactForm()" style="padding:11px 16px;border:1px solid var(--border);border-radius:8px;background:none;font-size:13px;cursor:pointer;font-family:inherit;color:var(--gray)">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: DIRECTORIO -->
+<div id="tab-directorio" class="tab">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px">
+    <div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:2px">Directorio CIMA</div>
+      <div style="font-size:12px;color:var(--gray)">Perfiles con datos de contacto + contactos manuales · vista de agenda</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <input class="search-input" id="dir-search" placeholder="Buscar..." oninput="renderDirectorio()">
+      <button onclick="exportDirectorio()" style="padding:9px 16px;border:1px solid var(--border);border-radius:8px;background:transparent;font-size:12px;cursor:pointer;font-family:inherit;color:var(--gray)">Exportar CSV</button>
+    </div>
+  </div>
+
+  <div id="dir-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px"></div>
+
+  <div id="directorio-list"></div>
+</div>
+
+
+</div>
+
+<script>
+// Session auth check
+(function() {
+  const pwd = sessionStorage.getItem('cima_session_pwd');
+  if (!pwd) { window.location.href = '/'; return; }
+})();
+
+// -- DATA --------------------------------------------------------------------
+const PROFILES_DATA = [
+  {
+    "id": "pedro-claveria",
+    "name": "Pedro Clavería",
+    "role": "CEO · Playtomic",
+    "type": "Founder",
+    "sector": "Tech / Marketplace",
+    "tier": "disponible",
+    "events": {
+      "ponencia": true,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 90,
+    "hook": "Escaló Playtomic al marketplace de pádel más grande del mundo desde cero.",
+    "bio_short": "Cofundador de Playtomic junto a Félix Ruiz (Tuenti). Antes en Rocket Internet. Historia de exits y escala real desde España.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/pedroclaveria",
+      "instagram": "",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "Contacto directo — ya ha participado en CIMA"
+    },
+    "mutual_contact": "Equipo CIMA",
+    "notes": "Ya participó en CIMA. Perfil de alta confianza. Fácil de volver a activar.",
+    "outreach_history": [
+      {
+        "date": "2025-11",
+        "channel": "directo",
+        "status": "confirmado",
+        "notes": "Ponencia realizada exitosamente"
+      }
+    ],
+    "signals": [],
+    "added": "2025-01-01",
+    "status": "confirmado"
+  },
+  {
+    "id": "ramiro-iglesias",
+    "name": "Ramiro Iglesias",
+    "role": "CEO & Founder · Crescenta",
+    "type": "Founder",
+    "sector": "Finanzas / PE",
+    "tier": "disponible",
+    "events": {
+      "ponencia": true,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 87,
+    "hook": "Democratizó el private equity en España. Q&A muy accionable.",
+    "bio_short": "Fundó Crescenta para dar acceso a private equity a inversores no institucionales. Ex-consultor. Muy activo en ecosistema Madrid.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/ramiroiglesias",
+      "instagram": "@ramiro_crescenta",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "Contacto directo — ya ha participado en CIMA"
+    },
+    "mutual_contact": "Equipo CIMA",
+    "notes": "Ya participó en CIMA IV edición. Frameworks muy prácticos. Alta valoración de asistentes.",
+    "outreach_history": [
+      {
+        "date": "2026-02",
+        "channel": "directo",
+        "status": "confirmado",
+        "notes": "Ponencia realizada"
+      }
+    ],
+    "signals": [],
+    "added": "2025-01-01",
+    "status": "confirmado"
+  },
+  {
+    "id": "ignacio-moreno-pubul",
+    "name": "Ignacio Moreno Pubul",
+    "role": "Cofundador · Capchase",
+    "type": "Founder",
+    "sector": "Fintech / EE.UU.",
+    "tier": "disponible",
+    "events": {
+      "ponencia": true,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 89,
+    "hook": "Escaló Capchase de Madrid a Nueva York. La mejor historia España→US del ecosistema ahora mismo.",
+    "bio_short": "Cofundó Capchase en 2020, plataforma de financiación no dilutiva. Levantó más de $400M. Historia de escalar desde España al mercado global.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/ignaciomorenopubul",
+      "instagram": "",
+      "twitter": "@ignaciomp",
+      "email": "",
+      "phone": "",
+      "via": "Contacto directo — ya ha participado en cenas CIMA"
+    },
+    "mutual_contact": "Equipo CIMA",
+    "notes": "Participó en cena CIMA formato íntimo. Conversación muy auténtica. Candidato también a ponencia.",
+    "outreach_history": [
+      {
+        "date": "2025-10",
+        "channel": "directo",
+        "status": "confirmado",
+        "notes": "Cena CIMA realizada"
+      }
+    ],
+    "signals": [],
+    "added": "2025-01-01",
+    "status": "confirmado"
+  },
+  {
+    "id": "enrique-riquelme",
+    "name": "Enrique Riquelme",
+    "role": "Fundador · COX Energy",
+    "type": "Founder",
+    "sector": "Energía / Impacto",
+    "tier": "disponible",
+    "events": {
+      "ponencia": true,
+      "cena": false,
+      "ponencia_puede_bajar_a_cena": true
+    },
+    "rep_score": 83,
+    "hook": "Construyó una de las mayores solares de Europa desde cero. Visión y propósito.",
+    "bio_short": "Fundó COX Energy, empresa de energía solar con proyectos en varios continentes. Uno de los emprendedores de impacto más relevantes de España.",
+    "contact": {
+      "linkedin": "",
+      "instagram": "",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "Contacto directo — confirmado para Marzo 2026"
+    },
+    "mutual_contact": "Equipo CIMA",
+    "notes": "Confirmado ponencia Marzo 2026.",
+    "outreach_history": [
+      {
+        "date": "2026-01",
+        "channel": "directo",
+        "status": "confirmado",
+        "notes": "Ponencia confirmada Marzo 2026"
+      }
+    ],
+    "signals": [],
+    "added": "2025-06-01",
+    "status": "confirmado"
+  },
+  {
+    "id": "pep-gomez",
+    "name": "Pep Gómez",
+    "role": "Fundador · Fever",
+    "type": "Founder",
+    "sector": "Tech / Entretenimiento",
+    "tier": "alcanzable",
+    "events": {
+      "ponencia": true,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 88,
+    "hook": "Creó una categoría nueva de entretenimiento urbano. Unicornio desde España.",
+    "bio_short": "Fundó Fever en 2014. Valoración unicornio. Presente en más de 80 ciudades globales. Referente de tech cultural en España.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/pepgomez",
+      "instagram": "@pepgomezfever",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "LinkedIn DM o contacto vía ecosistema Madrid"
+    },
+    "mutual_contact": "",
+    "notes": "",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "borja-adanero",
+    "name": "Borja Adanero",
+    "role": "Fundador · ThePowerMBA",
+    "type": "Founder",
+    "sector": "Educación / Negocio",
+    "tier": "alcanzable",
+    "events": {
+      "ponencia": true,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 81,
+    "hook": "Rompió el modelo de educación de negocio. Muy alineado con audiencia joven.",
+    "bio_short": "Fundó ThePowerMBA en 2017, el MBA más vendido de España. +100k alumnos. Referente en democratizar el acceso a educación de negocio.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/borjaadanero",
+      "instagram": "@borjaadanero",
+      "twitter": "@borjaadanero",
+      "email": "",
+      "phone": "",
+      "via": "LinkedIn o Instagram DM"
+    },
+    "mutual_contact": "",
+    "notes": "Ha participado en eventos similares. Muy accesible y abierto a iniciativas de emprendimiento joven.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "andoni-goicoechea",
+    "name": "Andoni Goicoechea",
+    "role": "Fundador · Goiko Grill",
+    "type": "Founder",
+    "sector": "F&B / Marca",
+    "tier": "alcanzable",
+    "events": {
+      "ponencia": true,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 79,
+    "hook": "Marca de culto construida desde cero en sector saturado. Historia muy millennial.",
+    "bio_short": "Fundó Goiko en 2013. Vendió participación mayoritaria a CVC en 2019. Historia de marca, cultura y escala en restauración organizada.",
+    "contact": {
+      "linkedin": "",
+      "instagram": "@goikogrill",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "Instagram o contacto vía sector hostelería Madrid"
+    },
+    "mutual_contact": "",
+    "notes": "Perfil muy natural para cena CIMA. Historia accesible y cercana.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "lupina-iturriaga",
+    "name": "Lupina Iturriaga",
+    "role": "Fundadora · Fintonic",
+    "type": "Founder",
+    "sector": "Fintech",
+    "tier": "alcanzable",
+    "events": {
+      "ponencia": true,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 82,
+    "hook": "CUNEF alumni. Referente femenina del ecosistema startup español.",
+    "bio_short": "Cofundó Fintonic en 2012, la app de gestión financiera personal líder en España. Conexión directa con red CUNEF de CIMA.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/lupinaiturriaga",
+      "instagram": "",
+      "twitter": "@lupinaiturriaga",
+      "email": "",
+      "phone": "",
+      "via": "LinkedIn directo o vía red CUNEF"
+    },
+    "mutual_contact": "Red CUNEF",
+    "notes": "CUNEF alumni — vía de acceso directa a través de la red de CIMA.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "inaki-arrola",
+    "name": "Iñaki Arrola",
+    "role": "Fundador · Coches.com / K Fund",
+    "type": "Inversor",
+    "sector": "VC / Exits",
+    "tier": "alcanzable",
+    "events": {
+      "ponencia": false,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 85,
+    "hook": "Exit + fondo propio. Perspectiva única founder-inversor en el ecosistema.",
+    "bio_short": "Fundó Coches.com (vendido a Schibsted). Luego creó K Fund, uno de los fondos más activos de España en early-stage.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/inarrola",
+      "instagram": "",
+      "twitter": "@inarrola",
+      "email": "",
+      "phone": "",
+      "via": "Twitter/LinkedIn o vía ecosistema VC Madrid"
+    },
+    "mutual_contact": "",
+    "notes": "Perfil ideal para cena CIMA. Muy conversacional, no de escenario.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "carlos-blanco",
+    "name": "Carlos Blanco",
+    "role": "Inversor · Nuclio Venture Builder",
+    "type": "Inversor",
+    "sector": "VC / Ecosistema",
+    "tier": "alcanzable",
+    "events": {
+      "ponencia": true,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 80,
+    "hook": "Builder e inversor de los más activos en España. Visión dual.",
+    "bio_short": "Fundó Nuclio, el venture builder de referencia en España. Ha participado en más de 100 startups. Muy activo en LinkedIn y medios.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/carlosblancocheca",
+      "instagram": "",
+      "twitter": "@carlosblancoch",
+      "email": "",
+      "phone": "",
+      "via": "LinkedIn DM — muy activo"
+    },
+    "mutual_contact": "",
+    "notes": "Fácil de activar. Muy acostumbrado a eventos de ecosistema.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "javier-rodriguez-zapatero",
+    "name": "Javier Rodríguez Zapatero",
+    "role": "Ex-DG · Google España",
+    "type": "Ejecutivo",
+    "sector": "Tech / Liderazgo",
+    "tier": "alcanzable",
+    "events": {
+      "ponencia": true,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 83,
+    "hook": "15 años liderando Google en España. Voz honesta sobre liderazgo digital.",
+    "bio_short": "Director General de Google España durante 15 años. Ahora advisor e inversor. Ha participado en eventos de jóvenes economistas y emprendimiento.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/javierrzapatero",
+      "instagram": "",
+      "twitter": "@jrzapatero",
+      "email": "",
+      "phone": "",
+      "via": "LinkedIn o vía ecosistema tech Madrid"
+    },
+    "mutual_contact": "",
+    "notes": "",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "marc-vidal",
+    "name": "Marc Vidal",
+    "role": "Analista / Emprendedor",
+    "type": "Divulgador",
+    "sector": "IA / Economía",
+    "tier": "alcanzable",
+    "events": {
+      "ponencia": true,
+      "cena": false,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 76,
+    "hook": "Top LinkedIn España. Referente en IA y economía digital. Fácil de activar.",
+    "bio_short": "Emprendedor, analista y divulgador económico. Uno de los perfiles con mayor alcance en LinkedIn España. Muy activo en eventos.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/marcvidal",
+      "instagram": "@marcvidalgarcia",
+      "twitter": "@marcvidal",
+      "email": "",
+      "phone": "",
+      "via": "LinkedIn DM directo"
+    },
+    "mutual_contact": "",
+    "notes": "Perfil divulgador. Bueno para ponencia de tendencias/futuro.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "alex-rodriguez-vitello",
+    "name": "Álex Rodríguez Vitello",
+    "role": "Fundador · Internxt",
+    "type": "Founder",
+    "sector": "Tech / Privacidad",
+    "tier": "alcanzable",
+    "events": {
+      "ponencia": true,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 77,
+    "hook": "Cloud alternativo a Google, fundado con 19 años. Uno de los founders más jóvenes del ecosistema.",
+    "bio_short": "Fundó Internxt con 19 años, cloud storage privado y encriptado. Muy resonante con audiencia joven por su historia de fundación temprana.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/alexrodriguezvitello",
+      "instagram": "@alexrodriguezvitello",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "Instagram DM o LinkedIn"
+    },
+    "mutual_contact": "",
+    "notes": "Perfil muy joven y auténtico. Gran resonancia con la audiencia de CIMA.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "nacho-de-pinedo",
+    "name": "Nacho de Pinedo",
+    "role": "Fundador · ISDI",
+    "type": "Founder",
+    "sector": "Educación / Digital",
+    "tier": "alcanzable",
+    "events": {
+      "ponencia": false,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 78,
+    "hook": "Construyó la escuela de negocios digital de referencia en España. Red enorme.",
+    "bio_short": "Fundó ISDI en 2009, pionero en transformación digital. Red enorme de alumni y corporates en España y LATAM.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/nachodepinedo",
+      "instagram": "",
+      "twitter": "@nachodepinedo",
+      "email": "",
+      "phone": "",
+      "via": "LinkedIn o vía red ISDI"
+    },
+    "mutual_contact": "",
+    "notes": "Mejor para cena que ponencia. Perfil conversacional y conector.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "pablo-vidarte",
+    "name": "Pablo Vidarte",
+    "role": "Fundador · Bioo / Arkyne Technologies",
+    "type": "Founder",
+    "sector": "Biotech / Energía",
+    "tier": "alcanzable",
+    "events": {
+      "ponencia": true,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 79,
+    "hook": "Fundó Bioo con 22 años, generando electricidad desde la fotosíntesis de plantas.",
+    "bio_short": "Joven emprendedor español de referencia en biotech y sostenibilidad. Historia de ciencia + emprendimiento muy poderosa para audiencia CIMA.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/pablovidarte",
+      "instagram": "@pablovidarte",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "LinkedIn o Instagram DM"
+    },
+    "mutual_contact": "",
+    "notes": "Perfil muy joven (misma generación que audiencia CIMA). Historia inspiradora.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-03-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "emilio-frojan",
+    "name": "Emilio Froján",
+    "role": "CEO · Velca",
+    "type": "Founder",
+    "sector": "Movilidad Eléctrica",
+    "tier": "alcanzable",
+    "events": {
+      "ponencia": true,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 75,
+    "hook": "Mejor marca de motos eléctricas de Europa 2022. Fundada desde España.",
+    "bio_short": "CEO y cofundador de Velca, startup de motos 100% eléctricas. Premio Nacional de Marketing. Galardones internacionales.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/emiliofrojan",
+      "instagram": "",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "LinkedIn DM"
+    },
+    "mutual_contact": "",
+    "notes": "Perfil interesante para cena. Historia de producto físico + marca desde España.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-03-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "elena-betes",
+    "name": "Elena Betés",
+    "role": "Fundadora · Rastreator / Emmoti",
+    "type": "Founder",
+    "sector": "Insurtech / Healthtech",
+    "tier": "alcanzable",
+    "events": {
+      "ponencia": true,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 80,
+    "hook": "Exit de Rastreator. Ahora fundando en neurodivergencia por historia personal.",
+    "bio_short": "Fundó Rastreator y logró un exit relevante. Ahora fundó Emmoti para detección de neurodivergencias, impulsada por su experiencia personal con la dislexia.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/elenabetes",
+      "instagram": "",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "LinkedIn DM"
+    },
+    "mutual_contact": "",
+    "notes": "Historia de exit + reinvención con propósito. Muy poderosa para CIMA.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-03-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "bernat-ripoll",
+    "name": "Bernat Ripoll",
+    "role": "Cofundador · Holded",
+    "type": "Founder",
+    "sector": "SaaS / B2B",
+    "tier": "alcanzable",
+    "events": {
+      "ponencia": false,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 76,
+    "hook": "ERP más vendido en España. Exit a Visma en 2021.",
+    "bio_short": "Cofundó Holded, el ERP más vendido en España. Vendido a Visma (multinacional noruega) en 2021. Historia de B2B SaaS desde cero.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/bernatripoll",
+      "instagram": "",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "LinkedIn DM"
+    },
+    "mutual_contact": "",
+    "notes": "Mejor para cena. Historia de exit B2B, muy accionable para audiencia emprendedora.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-03-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "enrique-tomas",
+    "name": "Enrique Tomás",
+    "role": "Fundador · Enrique Tomás",
+    "type": "Founder",
+    "sector": "F&B / Retail Global",
+    "tier": "alcanzable",
+    "events": {
+      "ponencia": true,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 78,
+    "hook": "120+ tiendas en Europa, América y Asia. Construyó una marca global de jamón ibérico.",
+    "bio_short": "Fundó la cadena Enrique Tomás, la mayor red de tiendas especializadas en jamón ibérico del mundo. Modelo de internacionalización de producto español.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/enriquetomas",
+      "instagram": "@enriquetomas",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "LinkedIn o vía sector retail/gastronomía"
+    },
+    "mutual_contact": "",
+    "notes": "Historia de marca y escalado internacional desde un producto muy español.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-03-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "sara-garcia-alonso",
+    "name": "Sara García Alonso",
+    "role": "Astronauta · ESA",
+    "type": "Deportista",
+    "sector": "Ciencia / Espacio",
+    "tier": "alcanzable",
+    "events": {
+      "ponencia": true,
+      "cena": false,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 88,
+    "hook": "Primera española astronauta de la ESA. Referente de mentalidad de alto rendimiento y ciencia.",
+    "bio_short": "Ingeniera y astronauta española seleccionada por la ESA en 2022. Figura de referencia nacional en ciencia, STEM y mentalidad de superación.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/saragarciaalonso",
+      "instagram": "@sara_g_alonso",
+      "twitter": "@sara_g_alonso",
+      "email": "",
+      "phone": "",
+      "via": "Vía ESA o representante / LinkedIn"
+    },
+    "mutual_contact": "",
+    "notes": "Confirmada en FOMOfest 2026. Muy activa en eventos de emprendimiento e inspiración.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-03-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "saul-craviotto",
+    "name": "Saúl Craviotto",
+    "role": "Campeón Olímpico · Piragüismo",
+    "type": "Deportista",
+    "sector": "Deporte / Liderazgo",
+    "tier": "alcanzable",
+    "events": {
+      "ponencia": true,
+      "cena": false,
+      "ponencia_puede_bajar_a_cena": true
+    },
+    "rep_score": 82,
+    "hook": "Deportista español más laureado de la historia. Mentalidad de campeón aplicable a empresa.",
+    "bio_short": "6 medallas olímpicas. El deportista español con más medallas olímpicas de la historia. Muy activo en conferencias de liderazgo y empresa.",
+    "contact": {
+      "linkedin": "",
+      "instagram": "@saulcraviotto",
+      "twitter": "@SaulCraviotto",
+      "email": "",
+      "phone": "",
+      "via": "Instagram DM o agencia de representación"
+    },
+    "mutual_contact": "",
+    "notes": "Participó en FOMOfest 2026. Hay que diferenciarse del circuito corporativo habitual en la propuesta.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-03-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "javier-goyeneche",
+    "name": "Javier Goyeneche",
+    "role": "Fundador · Ecoalf",
+    "type": "Founder",
+    "sector": "Moda / Sostenibilidad",
+    "tier": "medio",
+    "events": {
+      "ponencia": true,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 85,
+    "hook": "Moda sostenible de referencia global desde Madrid. Impacto + negocio + estética.",
+    "bio_short": "Fundó Ecoalf en 2009. Marca de moda sostenible con materia prima 100% reciclada. Una de las primeras marcas B-Corp en España.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/javiergoyeneche",
+      "instagram": "@javiergoyeneche",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "Instagram DM o LinkedIn"
+    },
+    "mutual_contact": "",
+    "notes": "Perfil muy coherente con valores CIMA. Muy activo en medios y podcasts en 2025-26.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "olaf-diaz-pintado",
+    "name": "Olaf Díaz-Pintado",
+    "role": "Ex-CEO · Goldman Sachs España",
+    "type": "Ejecutivo",
+    "sector": "Banca / Finanzas",
+    "tier": "medio",
+    "events": {
+      "ponencia": true,
+      "cena": false,
+      "ponencia_puede_bajar_a_cena": true
+    },
+    "rep_score": 91,
+    "hook": "Finanzas de alto nivel. Referente de liderazgo en entornos de máxima presión.",
+    "bio_short": "Ex-CEO de Goldman Sachs España. Una de las carreras financieras más destacadas del país. Muy aspiracional para la audiencia CIMA.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/olafdp",
+      "instagram": "",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "Contacto directo — confirmado Mayo 2026"
+    },
+    "mutual_contact": "Equipo CIMA",
+    "notes": "Confirmado para Mayo 2026. Requiere contexto muy claro de CIMA en la propuesta.",
+    "outreach_history": [
+      {
+        "date": "2026-02",
+        "channel": "directo",
+        "status": "confirmado",
+        "notes": "Ponencia confirmada Mayo 2026"
+      }
+    ],
+    "signals": [],
+    "added": "2025-06-01",
+    "status": "confirmado"
+  },
+  {
+    "id": "marian-rojas-estape",
+    "name": "Marian Rojas Estapé",
+    "role": "Psiquiatra · Escritora",
+    "type": "Divulgador",
+    "sector": "Salud Mental / Personal",
+    "tier": "medio",
+    "events": {
+      "ponencia": true,
+      "cena": false,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 96,
+    "hook": "Mayor resonancia con audiencia joven en España ahora mismo. Fit altísimo.",
+    "bio_short": "Psiquiatra, escritora y divulgadora. 'Cómo hacer que te pasen cosas buenas' y 'Encuentra tu persona vitamina' superventas. La voz de salud mental más influyente de España.",
+    "contact": {
+      "linkedin": "",
+      "instagram": "@marianrojasestape",
+      "twitter": "@MaRojasEstape",
+      "email": "",
+      "phone": "",
+      "via": "Instagram DM o vía editorial (Espasa)"
+    },
+    "mutual_contact": "",
+    "notes": "Caché elevado. Hay que diferenciarse muy bien del circuito corporativo estándar. El formato CIMA (íntimo, jóvenes, sin PowerPoints) puede ser el gancho.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "toni-nadal",
+    "name": "Toni Nadal",
+    "role": "Ex-entrenador · Rafa Nadal",
+    "type": "Deportista",
+    "sector": "Deporte / Liderazgo",
+    "tier": "medio",
+    "events": {
+      "ponencia": true,
+      "cena": false,
+      "ponencia_puede_bajar_a_cena": true
+    },
+    "rep_score": 92,
+    "hook": "El método Nadal aplicado a liderazgo y empresa. Charlas muy estructuradas.",
+    "bio_short": "Entrenó a Rafa Nadal desde los 4 años hasta 2017. Ahora conferenciante y director de academia en Canadá. Uno de los speakers más solicitados de España.",
+    "contact": {
+      "linkedin": "",
+      "instagram": "@toni.nadal.oficial",
+      "twitter": "@ToniNadal",
+      "email": "",
+      "phone": "",
+      "via": "Instagram o agencia de representación"
+    },
+    "mutual_contact": "",
+    "notes": "Muy solicitado en circuito corporativo. Propuesta debe ser distinta — el formato CIMA (jóvenes, no corporativo) puede diferenciarse bien.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "edurne-pasaban",
+    "name": "Edurne Pasabán",
+    "role": "Alpinista · 14 ochomiles",
+    "type": "Deportista",
+    "sector": "Deporte / Superación",
+    "tier": "medio",
+    "events": {
+      "ponencia": true,
+      "cena": false,
+      "ponencia_puede_bajar_a_cena": true
+    },
+    "rep_score": 89,
+    "hook": "Primera mujer en los 14 ochomiles. La conexión con CIMA (cumbre, montaña) es literal.",
+    "bio_short": "Primera mujer en escalar los 14 ochomiles. Escritora e inspectora. Su historia de superación y salud mental es profundamente humana.",
+    "contact": {
+      "linkedin": "",
+      "instagram": "@edurnepasaban",
+      "twitter": "@EdurnePasaban",
+      "email": "",
+      "phone": "",
+      "via": "Instagram DM o agencia"
+    },
+    "mutual_contact": "",
+    "notes": "La conexión simbólica con CIMA (cumbre, montaña, esfuerzo) es el gancho perfecto de outreach.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "inigo-juantegui",
+    "name": "Íñigo Juantegui",
+    "role": "CEO · Wallapop",
+    "type": "Ejecutivo",
+    "sector": "Marketplace / C2C",
+    "tier": "medio",
+    "events": {
+      "ponencia": true,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 84,
+    "hook": "Marketplace de segunda mano más grande de España. Economía circular y escala.",
+    "bio_short": "CEO de Wallapop desde 2018. Antes fundó La Nevera Roja (vendida a Just Eat) y OnTruck. Uno de los fundadores más prolíficos del ecosistema.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/inigojuantegui",
+      "instagram": "",
+      "twitter": "@ijuantegui",
+      "email": "",
+      "phone": "",
+      "via": "LinkedIn o Twitter DM"
+    },
+    "mutual_contact": "",
+    "notes": "Muy mediático en 2025-26 con Wallapop. Buen momento para contactar.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "dabiz-munoz",
+    "name": "Dabiz Muñoz",
+    "role": "Chef · DiverXO",
+    "type": "Chef",
+    "sector": "Gastronomía / Marca",
+    "tier": "medio",
+    "events": {
+      "ponencia": false,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 88,
+    "hook": "3 estrellas Michelin en Madrid. Obsesión, creatividad y construir sin red.",
+    "bio_short": "Chef de DiverXO, el único restaurante con 3 estrellas Michelin en Madrid. Referente global de creatividad y excelencia. Muy mediático en 2024-26.",
+    "contact": {
+      "linkedin": "",
+      "instagram": "@dabizdiverxo",
+      "twitter": "@dabizdiverxo",
+      "email": "",
+      "phone": "",
+      "via": "Instagram DM o vía DiverXO"
+    },
+    "mutual_contact": "",
+    "notes": "Ideal para cena CIMA exclusiva. Perfil muy distinto que da un sello especial al evento.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "eduardo-diez-hochleitner",
+    "name": "Eduardo Díez Hochleitner",
+    "role": "Socio · JME / Lanzadera",
+    "type": "Inversor",
+    "sector": "VC / Ecosistema",
+    "tier": "medio",
+    "events": {
+      "ponencia": false,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 81,
+    "hook": "Conexión directa ecosistema Lanzadera. Perspectiva inversor early-stage.",
+    "bio_short": "Socio en JME Ventures y vinculado al ecosistema Lanzadera de Juan Roig. Inversor early-stage muy activo en España.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/eduardodiezhochleitner",
+      "instagram": "",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "LinkedIn DM o vía Lanzadera"
+    },
+    "mutual_contact": "",
+    "notes": "Palanca de acceso para perfiles de Lanzadera/Juan Roig. Ideal para cena.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "cristina-urdiales",
+    "name": "Cristina Urdiales",
+    "role": "Fundadora · Hannun",
+    "type": "Founder",
+    "sector": "D2C / Diseño",
+    "tier": "medio",
+    "events": {
+      "ponencia": false,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 77,
+    "hook": "D2C de muebles artesanales que compite con los grandes. Marca con propósito.",
+    "bio_short": "Fundó Hannun, plataforma D2C de muebles artesanales sostenibles. Historia de construir canal propio y comunidad en sector tradicional.",
+    "contact": {
+      "linkedin": "https://linkedin.com/in/cristinaurdiales",
+      "instagram": "@cristinaurdiales",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "Instagram o LinkedIn DM"
+    },
+    "mutual_contact": "",
+    "notes": "Mejor para cena. Historia de D2C y marca femenina emprendedora.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "rafa-nadal",
+    "name": "Rafa Nadal",
+    "role": "Deportista / Empresario",
+    "type": "Deportista",
+    "sector": "Deporte / Marca",
+    "tier": "elite",
+    "events": {
+      "ponencia": true,
+      "cena": false,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 99,
+    "hook": "El máximo referente español de mentalidad y esfuerzo. Retirado, mayor disponibilidad.",
+    "bio_short": "22 Grand Slams. Retirado en 2024. Ahora volcado en su academia y en el mundo empresarial. La marca personal más potente del deporte español.",
+    "contact": {
+      "linkedin": "",
+      "instagram": "@rafaelnadal",
+      "twitter": "@RafaelNadal",
+      "email": "",
+      "phone": "",
+      "via": "Vía Rafa Nadal Academy / equipo de management"
+    },
+    "mutual_contact": "",
+    "notes": "Retirado — podría tener mayor disponibilidad que antes. Caché muy elevado. Requiere propuesta institucional.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "pau-gasol",
+    "name": "Pau Gasol",
+    "role": "Ex-NBA · Gasol Foundation",
+    "type": "Deportista",
+    "sector": "Deporte / Impacto",
+    "tier": "elite",
+    "events": {
+      "ponencia": true,
+      "cena": false,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 97,
+    "hook": "Figura icónica con agenda cerrada. Gran coherencia con audiencia joven.",
+    "bio_short": "Leyenda NBA. Fundó la Gasol Foundation enfocada en salud infantil. Figura global con enorme coherencia con los valores de CIMA.",
+    "contact": {
+      "linkedin": "",
+      "instagram": "@paugasol",
+      "twitter": "@paugasol",
+      "email": "",
+      "phone": "",
+      "via": "Vía Gasol Foundation o representante institucional"
+    },
+    "mutual_contact": "",
+    "notes": "Acceso requiere vía institucional. Agenda muy cerrada. Propuesta de impacto social necesaria.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "juan-roig",
+    "name": "Juan Roig",
+    "role": "Presidente · Mercadona / Lanzadera",
+    "type": "Ejecutivo",
+    "sector": "Retail / Ecosistema",
+    "tier": "elite",
+    "events": {
+      "ponencia": true,
+      "cena": false,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 96,
+    "hook": "Hito máximo para CIMA. Vía de acceso: Marina de Empresas / FOMOfest.",
+    "bio_short": "Presidente de Mercadona y fundador de Marina de Empresas (Lanzadera + EDEM + Angels). El emprendedor de mayor impacto empresarial de España.",
+    "contact": {
+      "linkedin": "",
+      "instagram": "",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "Vía Marina de Empresas / FOMOfest / Lanzadera"
+    },
+    "mutual_contact": "Eduardo Díez Hochleitner (vía Lanzadera)",
+    "notes": "Prácticamente no hace eventos privados. Si se consigue es un hito histórico para CIMA. La vía más viable es FOMOfest o colaboración con Lanzadera.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "isak-andic",
+    "name": "Isak Andic",
+    "role": "Fundador · Mango",
+    "type": "Ejecutivo",
+    "sector": "Moda / Global",
+    "tier": "elite",
+    "events": {
+      "ponencia": true,
+      "cena": false,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 91,
+    "hook": "Historia de escalar marca global española desde cero. Rara vez hace eventos.",
+    "bio_short": "Fundó Mango en 1984. Una de las marcas de moda más reconocidas globalmente. Empresa familiar con presencia en 110 países.",
+    "contact": {
+      "linkedin": "",
+      "instagram": "",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "Vía Mango corporativo o contacto institucional catalán"
+    },
+    "mutual_contact": "",
+    "notes": "Muy difícil. Rara vez hace eventos. La historia de Mango es perfecta para CIMA pero el acceso es limitado.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "florentino-perez",
+    "name": "Florentino Pérez",
+    "role": "Presidente · Real Madrid / ACS",
+    "type": "Ejecutivo",
+    "sector": "Empresa / Deporte",
+    "tier": "elite",
+    "events": {
+      "ponencia": true,
+      "cena": false,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 95,
+    "hook": "Mejor gestor de marca global del deporte. Acceso casi imposible.",
+    "bio_short": "Presidente del Real Madrid desde 2000 (con pausa) y presidente de ACS. Ha convertido el Madrid en la marca deportiva más valiosa del mundo.",
+    "contact": {
+      "linkedin": "",
+      "instagram": "",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "Vía ACS o Real Madrid institucional"
+    },
+    "mutual_contact": "",
+    "notes": "Acceso prácticamente imposible para evento externo. Incluido como referencia aspiracional máxima.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  },
+  {
+    "id": "carolina-herrera-jr",
+    "name": "Carolina Herrera Jr.",
+    "role": "Directora Creativa · CH",
+    "type": "Ejecutivo",
+    "sector": "Moda / Lujo",
+    "tier": "elite",
+    "events": {
+      "ponencia": true,
+      "cena": true,
+      "ponencia_puede_bajar_a_cena": false
+    },
+    "rep_score": 87,
+    "hook": "Icono del lujo y la marca personal. Perspectiva única sobre elegancia e identidad.",
+    "bio_short": "Directora de relaciones públicas y embajadora de la marca Carolina Herrera. Figura del lujo y la moda con enorme poder de marca personal.",
+    "contact": {
+      "linkedin": "",
+      "instagram": "@carolinaherrerajr",
+      "twitter": "",
+      "email": "",
+      "phone": "",
+      "via": "Instagram DM o vía CH corporativo"
+    },
+    "mutual_contact": "",
+    "notes": "Perfil inusual para CIMA pero muy potente. Historia de legado + marca personal.",
+    "outreach_history": [],
+    "signals": [],
+    "added": "2026-01-01",
+    "status": "nuevo"
+  }
+];
+
+const TIER_CONFIG = {
+  disponible: { label: 'Disponible', sub: 'Ha participado en CIMA — perfil validado', color: '#1D9E75' },
+  alcanzable:  { label: 'Al alcance',  sub: 'Founders y referentes activos del ecosistema', color: '#185FA5' },
+  medio:       { label: 'Con esfuerzo', sub: 'Figuras de alto perfil — requieren red y propuesta sólida', color: '#BA7517' },
+  elite:       { label: 'Aspiracional', sub: 'Nombres que elevarían CIMA a otra dimensión', color: '#A32D2D' },
+};
+
+const TYPE_COLORS = {
+  Founder: '#534AB7', Ejecutivo: '#185FA5', Inversor: '#0F6E56',
+  Deportista: '#993C1D', Chef: '#854F0B', Divulgador: '#5F5E5A',
+  Artista: '#72243E', Periodista: '#854F0B',
+};
+
+// -- STATE -------------------------------------------------------------------
+let state = {
+  activeTier: 'all',
+  activeEvent: 'all',
+  profiles: JSON.parse(localStorage.getItem('cima_profiles') || 'null') || PROFILES_DATA,
+  chatHistory: [],
+  pipeline: JSON.parse(localStorage.getItem('cima_pipeline') || '[]'),
+  dashData: JSON.parse(localStorage.getItem('cima_dashboard') || 'null') || {
+    ediciones: [
+      { nombre: "I Edición", fecha: "2024-10", asistentes: 115, formato: "ponencia", ponente: "Ignacio Moreno (Capchase)", sold_out: true },
+      { nombre: "II Edición", fecha: "2024-12", asistentes: 120, formato: "ponencia", ponente: "Pedro Clavería (Playtomic)", sold_out: true },
+      { nombre: "III Edición", fecha: "2025-02", asistentes: 120, formato: "ponencia", ponente: "Pedro Clavería (Playtomic)", sold_out: true },
+      { nombre: "IV Edición", fecha: "2025-04", asistentes: 120, formato: "ponencia", ponente: "Ramiro Iglesias (Crescenta)", sold_out: true },
+      { nombre: "Cena I", fecha: "2025-06", asistentes: 16, formato: "cena", ponente: "Ignacio Moreno (Capchase)", sold_out: true },
+    ],
+    comunidad: { linkedin: 0, whatsapp: 0, total: 0, instagram: 0 },
+    mercados: { madrid: true, barcelona: false, bilbao: false, valencia: false, internacional: false },
+    notas: ""
+  },
+  ideasHistory: JSON.parse(localStorage.getItem('cima_ideas') || '[]'),
+  contacts: JSON.parse(localStorage.getItem('cima_contacts') || '[]'),
+  contactFilter: 'all',
+  contactWarmth: 'all',
+  dirFilter: 'all',
+};
+
+// -- INIT ---------------------------------------------------------------------
+function init() {
+  updateApiStatus();
+  renderStats();
+  renderFilters();
+  renderProfiles();
+  renderConfirmed();
+  renderOutreachSelect();
+  renderPipelineSelect();
+  renderPipeline();
+  renderDashboard();
+  renderContacts();
+  renderDirectorio();
+  setNextScanDate();
+}
+
+// -- API KEY ------------------------------------------------------------------
+function showApiKeyModal() {
+  document.getElementById('apikey-overlay').classList.add('open');
+  document.getElementById('apikey-input').value = state.apiKey;
+}
+function saveApiKey() {
+  const k = document.getElementById('apikey-input').value.trim();
+  if (!k) return;
+  state.apiKey = k;
+  localStorage.setItem('cima_api_key', k);
+  document.getElementById('apikey-overlay').classList.remove('open');
+  updateApiStatus();
+}
+function updateApiStatus() {
+  const dot = document.getElementById('api-dot');
+  const txt = document.getElementById('api-status-text');
+  if (state.apiKey) {
+    dot.className = 'api-dot ok';
+    txt.textContent = 'API activa';
+    document.getElementById('api-key-btn').textContent = 'Cambiar API key';
+  } else {
+    dot.className = 'api-dot err';
+    txt.textContent = 'Sin API key';
+    document.getElementById('api-key-btn').textContent = 'Configurar API key';
+  }
+}
+
+// -- TABS ---------------------------------------------------------------------
+function showTab(id, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// -- STATS --------------------------------------------------------------------
+function renderStats() {
+  const p = state.profiles;
+  const counts = { disponible: 0, alcanzable: 0, medio: 0, elite: 0 };
+  p.forEach(x => counts[x.tier] = (counts[x.tier] || 0) + 1);
+  const confirmed = p.filter(x => x.status === 'confirmado').length;
+  const avgRep = Math.round(p.reduce((a, x) => a + x.rep_score, 0) / p.length);
+
+  const stats = [
+    { n: p.length, l: 'perfiles totales', c: '#111' },
+    { n: counts.disponible, l: 'disponibles', c: '#1D9E75' },
+    { n: counts.alcanzable, l: 'al alcance', c: '#185FA5' },
+    { n: counts.medio, l: 'con esfuerzo', c: '#BA7517' },
+    { n: counts.elite, l: 'aspiracional', c: '#A32D2D' },
+    { n: avgRep + '%', l: 'fit medio CIMA', c: '#CF2959' },
+  ];
+
+  document.getElementById('stats-row').innerHTML = stats.map(s =>
+    `<div class="stat"><div class="stat-n" style="color:${s.c}">${s.n}</div><div class="stat-l">${s.l}</div></div>`
+  ).join('');
+}
+
+// -- FILTERS ------------------------------------------------------------------
+function renderFilters() {
+  const row = document.getElementById('filter-row');
+  const tiers = [
+    { id: 'all', label: 'Todos' },
+    { id: 'disponible', label: '★ Disponible' },
+    { id: 'alcanzable', label: 'Al alcance' },
+    { id: 'medio', label: 'Con esfuerzo' },
+    { id: 'elite', label: 'Aspiracional' },
+  ];
+  const events = [
+    { id: 'ponencia', label: 'Ponencia' },
+    { id: 'cena', label: 'Cena' },
+  ];
+  let html = tiers.map(t =>
+    `<button class="chip ${t.id !== 'all' ? 'tier-' + t.id : ''} ${state.activeTier === t.id ? 'active' : ''}"
+      onclick="setFilter('tier','${t.id}',this)">${t.label}</button>`
+  ).join('');
+  html += '<span style="width:1px;height:20px;background:var(--border);display:inline-block;margin:0 4px"></span>';
+  html += events.map(e =>
+    `<button class="chip ${state.activeEvent === e.id ? 'active' : ''}"
+      onclick="setFilter('event','${e.id}',this)">${e.label}</button>`
+  ).join('');
+  row.innerHTML = html;
+}
+
+function setFilter(type, val, el) {
+  if (type === 'tier') { state.activeTier = val; state.activeEvent = 'all'; }
+  else { state.activeEvent = val; state.activeTier = 'all'; }
+  document.querySelectorAll('.filters .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderProfiles();
+}
+
+// -- PROFILES -----------------------------------------------------------------
+function getFiltered() {
+  const q = (document.getElementById('search-input')?.value || '').toLowerCase();
+  return state.profiles.filter(p => {
+    if (state.activeTier !== 'all' && p.tier !== state.activeTier) return false;
+    if (state.activeEvent === 'ponencia' && !p.events.ponencia) return false;
+    if (state.activeEvent === 'cena' && !p.events.cena) return false;
+    if (q && !p.name.toLowerCase().includes(q) && !p.role.toLowerCase().includes(q) && !p.sector.toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+function renderProfiles() {
+  const container = document.getElementById('profiles-container');
+  const filtered = getFiltered();
+  const label = document.getElementById('profile-count-label');
+  label.textContent = `${filtered.length} perfil${filtered.length !== 1 ? 'es' : ''} · haz clic en cualquiera para ver detalles y editar`;
+
+  const byTier = { disponible: [], alcanzable: [], medio: [], elite: [] };
+  filtered.forEach(p => byTier[p.tier].push(p));
+  // Sort: descartados go to bottom within each tier
+  Object.keys(byTier).forEach(tier => {
+    byTier[tier].sort((a, b) => {
+      if (a.status === 'descartado' && b.status !== 'descartado') return 1;
+      if (a.status !== 'descartado' && b.status === 'descartado') return -1;
+      return 0;
+    });
+  });
+
+  let html = '';
+  for (const tier of ['disponible', 'alcanzable', 'medio', 'elite']) {
+    const group = byTier[tier];
+    if (!group.length) continue;
+    const cfg = TIER_CONFIG[tier];
+    html += `<div class="tier-bar" style="background:${cfg.color}">
+      <span class="tier-bar-title">${cfg.label.toUpperCase()}</span>
+      <span class="tier-bar-sub">· ${cfg.sub}</span>
+      <span class="tier-bar-count">${group.length} perfil${group.length !== 1 ? 'es' : ''}</span>
+    </div>`;
+    html += `<div class="profiles-grid" style="margin-bottom:24px">`;
+    html += group.map(p => profileCard(p)).join('');
+    html += '</div>';
+  }
+
+  if (!html) {
+    html = `<div class="empty"><div class="empty-title">Sin resultados</div><div class="empty-sub">Prueba a cambiar los filtros o la búsqueda</div></div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function ini(name) {
+  return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
+
+function profileCard(p) {
+  const tc = TIER_CONFIG[p.tier]?.color || '#888';
+  const tyc = TYPE_COLORS[p.type] || '#888';
+  const star = p.tier === 'disponible' ? ' ★' : '';
+  const statusColors = { nuevo: '#888', en_contacto: '#BA7517', confirmado: '#1D9E75', descartado: '#A32D2D' };
+  const sc = statusColors[p.status] || '#888';
+
+  const eventTags = [];
+  if (p.events.ponencia) eventTags.push('Ponencia');
+  if (p.events.cena) eventTags.push('Cena');
+  if (p.events.ponencia_puede_bajar_a_cena) eventTags.push('↓ Cena posible');
+
+  const statusDotColor = { nuevo: '#F5A623', en_contacto: '#BA7517', confirmado: '#1D9E75', descartado: '#A32D2D' };
+  const statusLabel = { nuevo: 'Nuevo', en_contacto: 'En contacto', confirmado: 'Confirmado', descartado: 'Descartado' };
+  const sdot = statusDotColor[p.status] || '#888';
+  const slabel = statusLabel[p.status] || p.status;
+
+  return `<div class="pcard status-${p.status}" id="pcard-${p.id}" onclick="openProfile('${p.id}')">
+    <div class="pcard-head">
+      <div class="avatar" style="background:${p.status === 'descartado' ? '#ccc' : tc}">${ini(p.name)}</div>
+      <div style="flex:1">
+        <div class="pcard-name" style="display:flex;align-items:center;flex-wrap:wrap">
+          ${p.name}${star}
+          <span class="status-pill" style="background:${sdot}18;color:${sdot}">
+            <span style="width:5px;height:5px;border-radius:50%;background:${sdot};display:inline-block"></span>
+            ${slabel}
+          </span>
+        </div>
+        <div class="pcard-role">${p.role}</div>
+      </div>
+    </div>
+    <div class="ptags">
+      <span class="ptag ptag-tier" style="background:${tc}">${TIER_CONFIG[p.tier]?.label}</span>
+      <span class="ptag ptag-type" style="background:${tyc}">${p.type}</span>
+      ${eventTags.map(e => `<span class="ptag ptag-event">${e}</span>`).join('')}
+    </div>
+    <div class="pcard-hook">${p.hook}</div>
+    <div class="rep-row">
+      <span style="font-size:10px;color:var(--gray)">Fit CIMA</span>
+      <div class="rep-bar"><div class="rep-fill" style="width:${p.rep_score}%;background:${tc}"></div></div>
+      <span class="rep-pct">${p.rep_score}%</span>
+    </div>
+    <div class="pcard-actions">
+      <button class="pact" onclick="event.stopPropagation();askAgentAndSwitch('Busca señales recientes de ${p.name} en prensa española, LinkedIn y podcasts de las últimas 2 semanas')">Señales</button>
+      <button class="pact" onclick="event.stopPropagation();askAgentAndSwitch('Cuál es la vía más corta para llegar a ${p.name} para invitarle a CIMA? Sugiere estrategia de acceso concreta')">Acceso</button>
+      <button class="pact primary" onclick="event.stopPropagation();prefillOutreach('${p.id}')">Outreach</button>
+    </div>
+  </div>`;
+}
+
+// -- PROFILE MODAL -------------------------------------------------------------
+function openProfile(id) {
+  const p = state.profiles.find(x => x.id === id);
+  if (!p) return;
+  const tc = TIER_CONFIG[p.tier]?.color || '#888';
+
+  const historyHtml = p.outreach_history.length
+    ? p.outreach_history.map((h, idx) => `
+      <div class="history-item" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1">
+          <strong>${h.date}</strong> · ${h.channel} · 
+          <span style="color:${h.status==='confirmado'?'var(--green)':h.status==='respuesta_positiva'?'var(--green)':h.status==='respuesta_negativa'?'var(--red)':'var(--amber)'}">
+            ${h.status}
+          </span>
+          ${h.notes ? '<br><span style="color:var(--gray)">' + h.notes + '</span>' : ''}
+        </div>
+        <button onclick="deleteHistoryEntry('${p.id}',${idx})" style="flex-shrink:0;background:none;border:none;cursor:pointer;font-size:16px;color:var(--lgray);padding:0 2px;line-height:1" title="Borrar entrada">&times;</button>
+      </div>`).join('')
+    : '<div style="font-size:12px;color:var(--gray)">Sin historial de contacto aún.</div>';
+
+  document.getElementById('profile-modal-content').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+      <div class="avatar" style="background:${tc};width:44px;height:44px;font-size:14px">${ini(p.name)}</div>
+      <div>
+        <div class="modal-name">${p.name}</div>
+        <div class="modal-role">${p.role} · ${p.sector}</div>
+      </div>
+    </div>
+    <div class="ptags" style="margin-bottom:16px">
+      <span class="ptag ptag-tier" style="background:${tc}">${TIER_CONFIG[p.tier]?.label}</span>
+      <span class="ptag ptag-type" style="background:${TYPE_COLORS[p.type]||'#888'};color:#fff">${p.type}</span>
+      ${p.events.ponencia?'<span class="ptag ptag-event">Ponencia</span>':''}
+      ${p.events.cena?'<span class="ptag ptag-event">Cena</span>':''}
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Contacto</div>
+      ${fieldRow('LinkedIn', p.contact.linkedin, 'contact.linkedin', p.id, 'url')}
+      ${fieldRow('Instagram', p.contact.instagram, 'contact.instagram', p.id)}
+      ${fieldRow('Twitter/X', p.contact.twitter, 'contact.twitter', p.id)}
+      ${fieldRow('Email', p.contact.email, 'contact.email', p.id, 'email')}
+      ${fieldRow('Teléfono', p.contact.phone, 'contact.phone', p.id, 'tel')}
+      ${fieldRow('Vía acceso', p.contact.via, 'contact.via', p.id)}
+      ${fieldRow('Contacto común', p.mutual_contact, 'mutual_contact', p.id)}
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Notas privadas</div>
+      <textarea class="field-textarea" id="field-notes-${p.id}" placeholder="Notas, observaciones, contexto...">${p.notes}</textarea>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Estado</div>
+      <select class="field-input" id="field-status-${p.id}" style="max-width:200px">
+        ${['nuevo','en_contacto','confirmado','descartado'].map(s =>
+          `<option value="${s}" ${p.status===s?'selected':''}>${s.replace('_',' ')}</option>`
+        ).join('')}
+      </select>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Historial de outreach</div>
+      ${historyHtml}
+      <div id="add-history-form-${p.id}" style="margin-top:10px;background:var(--bg);border-radius:8px;padding:12px;display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div>
+            <div style="font-size:10px;color:var(--gray);margin-bottom:4px">Canal</div>
+            <select id="new-h-channel-${p.id}" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;background:var(--white);color:var(--black)">
+              <option>email</option>
+              <option>linkedin</option>
+              <option>instagram</option>
+              <option>whatsapp</option>
+              <option>twitter</option>
+              <option>telefono</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--gray);margin-bottom:4px">Estado</div>
+            <select id="new-h-status-${p.id}" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;background:var(--white);color:var(--black)">
+              <option value="enviado">enviado</option>
+              <option value="respuesta_positiva">respuesta positiva</option>
+              <option value="respuesta_negativa">respuesta negativa</option>
+              <option value="confirmado">confirmado</option>
+              <option value="sin_respuesta">sin respuesta</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:8px">
+          <div style="font-size:10px;color:var(--gray);margin-bottom:4px">Notas</div>
+          <input id="new-h-notes-${p.id}" type="text" placeholder="Ej: respondió positivamente, pide más info..." style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;background:var(--white);color:var(--black)">
+        </div>
+        <div style="display:flex;gap:6px">
+          <button onclick="confirmAddHistory('${p.id}')" style="flex:1;padding:7px;background:var(--pink);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500">Guardar entrada</button>
+          <button onclick="document.getElementById('add-history-form-${p.id}').style.display='none'" style="padding:7px 12px;background:none;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;color:var(--gray)">Cancelar</button>
+        </div>
+      </div>
+      <button class="add-history-btn" style="margin-top:8px" onclick="document.getElementById('add-history-form-${p.id}').style.display='block';this.style.display='none'">+ Añadir entrada</button>
+    </div>
+
+    <button class="save-btn" onclick="saveProfile('${p.id}')">Guardar cambios</button>
+  `;
+
+  document.getElementById('profile-modal').classList.add('open');
+}
+
+function fieldRow(label, val, field, id, type = 'text') {
+  return `<div class="field-row">
+    <span class="field-label">${label}</span>
+    <input class="field-input" id="field-${field.replace('.','_')}-${id}" type="${type}" value="${val||''}" placeholder="—">
+  </div>`;
+}
+
+function saveProfile(id) {
+  const p = state.profiles.find(x => x.id === id);
+  if (!p) return;
+
+  const fields = [
+    ['contact.linkedin','contact_linkedin'],['contact.instagram','contact_instagram'],
+    ['contact.twitter','contact_twitter'],['contact.email','contact_email'],
+    ['contact.phone','contact_phone'],['contact.via','contact_via'],
+    ['mutual_contact','mutual_contact'],
+  ];
+
+  fields.forEach(([path, fieldId]) => {
+    const el = document.getElementById(`field-${fieldId}-${id}`);
+    if (!el) return;
+    if (path.includes('.')) {
+      const [obj, key] = path.split('.');
+      p[obj][key] = el.value;
+    } else {
+      p[path] = el.value;
+    }
+  });
+
+  const notesEl = document.getElementById(`field-notes-${id}`);
+  if (notesEl) p.notes = notesEl.value;
+  const statusEl = document.getElementById(`field-status-${id}`);
+  if (statusEl) p.status = statusEl.value;
+
+  localStorage.setItem('cima_profiles', JSON.stringify(state.profiles));
+  closeProfileModal();
+  renderProfiles();
+  renderStats();
+  renderConfirmed();
+  // Scroll to the updated card
+  setTimeout(() => {
+    const card = document.getElementById('pcard-' + id);
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 100);
+}
+
+function confirmAddHistory(id) {
+  const p = state.profiles.find(x => x.id === id);
+  if (!p) return;
+  const date = new Date().toISOString().slice(0, 7);
+  const channel = document.getElementById('new-h-channel-' + id)?.value || 'email';
+  const status = document.getElementById('new-h-status-' + id)?.value || 'enviado';
+  const notes = document.getElementById('new-h-notes-' + id)?.value || '';
+  p.outreach_history.push({ date, channel, status, notes });
+  localStorage.setItem('cima_profiles', JSON.stringify(state.profiles));
+  openProfile(id);
+}
+
+function deleteHistoryEntry(id, idx) {
+  const p = state.profiles.find(x => x.id === id);
+  if (!p) return;
+  p.outreach_history.splice(idx, 1);
+  localStorage.setItem('cima_profiles', JSON.stringify(state.profiles));
+  openProfile(id);
+}
+
+function addHistoryEntry(id) {
+  confirmAddHistory(id);
+}
+
+function closeProfileModal() {
+  document.getElementById('profile-modal').classList.remove('open');
+}
+
+// -- CONFIRMED -----------------------------------------------------------------
+function renderConfirmed() {
+  const confirmed = state.profiles.filter(p => p.status === 'confirmado');
+  document.getElementById('confirmed-list').innerHTML = confirmed.map(p => {
+    const tc = TIER_CONFIG[p.tier]?.color || '#888';
+    return `<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;gap:10px;align-items:center;cursor:pointer" onclick="openProfile('${p.id}')">
+      <div class="avatar" style="background:${tc};width:36px;height:36px;font-size:12px">${ini(p.name)}</div>
+      <div>
+        <div style="font-size:13px;font-weight:600">${p.name}</div>
+        <div style="font-size:11px;color:var(--gray)">${p.role}</div>
+        <div style="font-size:10px;color:var(--green);margin-top:2px">● Confirmado</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// -- OUTREACH ------------------------------------------------------------------
+function renderOutreachSelect() {
+  const sel = document.getElementById('out-profile');
+  sel.innerHTML = state.profiles.map(p =>
+    `<option value="${p.id}">${p.name} — ${p.role.split('·')[0].trim()}</option>`
+  ).join('');
+}
+
+function prefillOutreach(id) {
+  const p = state.profiles.find(x => x.id === id);
+  if (!p) return;
+  showTab('outreach', document.querySelectorAll('.nav-btn')[3]);
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn')[3].classList.add('active');
+  document.getElementById('out-profile').value = id;
+  const typeEl = document.getElementById('out-type');
+  if (p.events.cena && !p.events.ponencia) typeEl.value = 'cena';
+  else typeEl.value = 'ponencia';
+}
+
+async function generateOutreach() {
+  const _pwd = sessionStorage.getItem('cima_session_pwd'); if (!_pwd) { window.location.href='/'; return; }
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true; btn.textContent = 'Generando...';
+
+  const id = document.getElementById('out-profile').value;
+  const p = state.profiles.find(x => x.id === id);
+  const type = document.getElementById('out-type').value;
+  const channel = document.getElementById('out-channel').value;
+  const via = document.getElementById('out-via').value;
+  const context = document.getElementById('out-context').value;
+
+  const prompt = `Redacta un mensaje de outreach personalizado para invitar a ${p.name} (${p.role}) a participar en CIMA como ${type === 'ponencia' ? 'ponente en evento grande (~100 personas, 45min charla + networking)' : 'invitado a cena íntima CIMA (15 personas, sin escenario, sin PowerPoints, conversación real)'}.
+
+Canal: ${channel}
+Vía: ${via}
+${context ? 'Contexto adicional: ' + context : ''}
+
+Sobre ${p.name}: ${p.bio_short || p.hook}
+
+Sobre CIMA: Evento sin ánimo de lucro, comunidad de 400+ jóvenes high-potential (22-30 años) con vocación emprendedora en España. Sold out en todas las ediciones. Formato ponencia: 45min + networking. Formato cena: 15 personas, conversación real, sin filtros.
+
+El mensaje debe ser:
+- Corto (máximo 120 palabras)
+- Auténtico, no corporativo
+- Con hook específico sobre su trayectoria o algo reciente suyo
+- Petición de acción clara y concreta
+- Que transmita que CIMA no es un evento genérico
+
+Escribe solo el mensaje, sin explicaciones adicionales.`;
+
+  try {
+    const resp = await callClaude([{ role: 'user', content: prompt }], false);
+    const result = document.getElementById('outreach-result');
+    document.getElementById('outreach-text').textContent = resp;
+    result.style.display = 'block';
+    result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch (e) {
+    alert('Error generando outreach: ' + e.message);
+  }
+
+  btn.disabled = false; btn.textContent = 'Generar outreach personalizado';
+}
+
+async function generateAlternative(tone) {
+  if (!state.apiKey) return;
+  const current = document.getElementById('outreach-text').textContent;
+  const labels = { corta: 'más corta (máximo 60 palabras)', formal: 'más formal y profesional', cercana: 'más cercana y personal, tuteando' };
+  const resp = await callClaude([{ role: 'user', content: `Reescribe este outreach en versión ${labels[tone]}:
+
+${current}
+
+Solo el mensaje reescrito, sin explicaciones.` }], false);
+  document.getElementById('outreach-text').textContent = resp;
+}
+
+function copyOutreach() {
+  const text = document.getElementById('outreach-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = '¡Copiado!';
+    setTimeout(() => btn.textContent = 'Copiar texto', 2000);
+  });
+}
+
+// -- CHAT ----------------------------------------------------------------------
+const SYSTEM_PROMPT = `Eres el agente de inteligencia de CIMA. Respondes siempre en español, de forma directa y concisa — nunca en plan informe corporativo.
+
+CIMA: evento sin ánimo de lucro para jóvenes 22-30 años con mentalidad emprendedora en España. Sold out en todas las ediciones. Fundado por los hermanos Gómez-Jordana y Fernando Siljestrom.
+- Ponencia: ~100 personas, 45min charla + networking con barra libre
+- Cena CIMA: 15 personas, sin escenario, sin PowerPoints, conversación real
+- Ya en CIMA: Pedro Clavería (Playtomic), Ramiro Iglesias (Crescenta), Ignacio Moreno (Capchase), Enrique Riquelme (COX Energy)
+- Próximo confirmado: Olaf Díaz-Pintado (ex-CEO Goldman Sachs ES) — Mayo 2026
+
+Tu trabajo: señales de perfiles, vías de acceso, outreach auténtico, briefings pre-evento.
+
+Formato de respuesta:
+- Sé conciso. Máximo 150-200 palabras salvo que pidan un briefing completo.
+- Usa listas cortas con "- " para pasos o puntos clave. Sin títulos en mayúsculas ni headers de informe.
+- Para vías de acceso: da máximo 2-3 opciones concretas, ordenadas de más a menos directa.
+- Para outreach: escribe el mensaje directamente, sin introducción ni explicación alrededor.
+- Nada de "## Estrategia de Acceso Óptima" ni lenguajes de consultoría. Habla como un compañero de equipo listo.`;
+
+
+function mdToHtml(text) {
+  return text
+    .replace(/^### (.+)$/gm, '<div style="font-size:12px;font-weight:700;color:var(--black);margin:12px 0 4px;letter-spacing:0.04em;text-transform:uppercase">$1</div>')
+    .replace(/^## (.+)$/gm, '<div style="font-size:13px;font-weight:700;color:var(--pink);margin:14px 0 6px">$1</div>')
+    .replace(/^# (.+)$/gm, '<div style="font-size:15px;font-weight:700;color:var(--black);margin:14px 0 6px">$1</div>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^- (.+)$/gm, '<div style="display:flex;gap:6px;margin:3px 0"><span style="color:var(--pink);flex-shrink:0">·</span><span>$1</span></div>')
+    .replace(/^\d+\. (.+)$/gm, '<div style="margin:3px 0;padding-left:4px">$1</div>')
+    .replace(/\n\n/g, '<div style="margin:8px 0"></div>')
+    .replace(/\n/g, '<br>');
+}
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const btn = document.getElementById('send-btn');
+  const q = input.value.trim();
+  if (!q || btn.disabled) return;
+  const _pwd = sessionStorage.getItem('cima_session_pwd'); if (!_pwd) { window.location.href='/'; return; }
+
+  input.value = ''; btn.disabled = true;
+  input.style.height = 'auto';
+  appendMsg('user', q);
+  state.chatHistory.push({ role: 'user', content: q });
+
+  const thinking = appendMsg('ai', '<div class="msg-label">CIMA AGENT</div><span style="color:var(--gray);font-style:italic">Pensando...</span>', true);
+
+  try {
+    const text = await callClaude(state.chatHistory, true);
+    thinking.remove();
+    appendMsg('ai', '<div class="msg-label">CIMA AGENT</div>' + mdToHtml(text));
+    state.chatHistory.push({ role: 'assistant', content: text });
+  } catch (e) {
+    thinking.remove();
+    appendMsg('ai', `<div class="msg-label">CIMA AGENT</div>Error: ${e.message}. Comprueba tu API key.`);
+  }
+
+  btn.disabled = false;
+}
+
+function appendMsg(type, html, raw = false) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + type;
+  div.innerHTML = html;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function askAgent(q) {
+  showTab('agent', null);
+  document.querySelectorAll('.nav-btn').forEach((b, i) => { b.classList.toggle('active', i === 2); });
+  setTimeout(() => {
+    document.getElementById('chat-input').value = q;
+    sendChat();
+  }, 100);
+}
+
+function askAgentAndSwitch(q) { askAgent(q); }
+
+// -- CLAUDE API ----------------------------------------------------------------
+async function callClaude(messages, useWebSearch = false) {
+  const pwd = sessionStorage.getItem('cima_session_pwd');
+  if (!pwd) { window.location.href = '/'; return ''; }
+
+  const body = {
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 1000,
+    system: SYSTEM_PROMPT,
+    messages: messages,
+  };
+  if (useWebSearch) {
+    body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
+  }
+
+  const resp = await fetch('/api/claude', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-cima-password': pwd,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (resp.status === 401) { window.location.href = '/'; return ''; }
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error?.message || 'Error ' + resp.status);
+  }
+
+  const data = await resp.json();
+  return data.content.filter(function(b){ return b.type === 'text'; }).map(function(b){ return b.text; }).join('\n');
+}
+
+// -- SCAN ----------------------------------------------------------------------
+async function runScan() {
+  const btn = document.getElementById('scan-btn');
+  const _pwd = sessionStorage.getItem('cima_session_pwd'); if (!_pwd) { window.location.href='/'; return; }
+  btn.disabled = true; btn.textContent = 'Escaneando fuentes...';
+
+  try {
+    const text = await callClaude([{
+      role: 'user',
+      content: 'Busca noticias y señales de los últimos 7 días sobre estos perfiles candidatos para el evento CIMA (emprendimiento jóvenes Madrid): Marian Rojas Estapé, Javier Goyeneche Ecoalf, Dabiz Muñoz DiverXO, Pep Gómez Fever, Toni Nadal, Sara García Alonso astronauta ESA, Iñaki Arrola K Fund, Edurne Pasabán. Devuelve 4-5 señales concretas y recientes con nombre, fuente y por qué es relevante para un evento de networking de jóvenes emprendedores. Formato: una señal por párrafo corto.'
+    }], true);
+
+    const list = document.getElementById('signals-list');
+    const newItem = document.createElement('div');
+    newItem.className = 'signal-item';
+    newItem.innerHTML = `<div class="sig-dot" style="background:var(--green)"></div>
+      <div><div class="sig-text"><strong>Scan en tiempo real —</strong> ${text.substring(0, 400)}${text.length > 400 ? '...' : ''}</div>
+      <div class="sig-meta">Actualizado ahora · Búsqueda web en tiempo real</div></div>`;
+    list.insertBefore(newItem, list.firstChild);
+  } catch(e) {
+    alert('Error en scan: ' + e.message);
+  }
+
+  btn.disabled = false; btn.textContent = 'Escanear fuentes ahora (prensa · podcasts · RRSS)';
+}
+
+
+// -- PIPELINE ------------------------------------------------------------------
+
+
+function addPipelineEntry() {
+  renderPipelineSelect();
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('pl-date').value = today;
+  document.getElementById('pipeline-form').style.display = 'flex';
+}
+
+function savePipelineEntry() {
+  const profileId = document.getElementById('pl-profile').value;
+  const profile = state.profiles.find(p => p.id === profileId);
+  const entry = {
+    id: Date.now(),
+    profileId,
+    profileName: profile?.name || profileId,
+    profileTier: profile?.tier || 'alcanzable',
+    event: document.getElementById('pl-event').value,
+    channel: document.getElementById('pl-channel').value,
+    status: document.getElementById('pl-status').value,
+    nextStep: document.getElementById('pl-next').value,
+    followupDate: document.getElementById('pl-date').value,
+    date: new Date().toISOString().slice(0,10),
+    createdAt: Date.now(),
+  };
+  state.pipeline.unshift(entry);
+  localStorage.setItem('cima_pipeline', JSON.stringify(state.pipeline));
+  document.getElementById('pipeline-form').style.display = 'none';
+  renderPipeline();
+}
+
+function deletePipelineEntry(id) {
+  state.pipeline = state.pipeline.filter(e => e.id !== id);
+  localStorage.setItem('cima_pipeline', JSON.stringify(state.pipeline));
+  renderPipeline();
+}
+
+function updatePipelineStatus(id, status) {
+  const e = state.pipeline.find(x => x.id === id);
+  if (e) { e.status = status; localStorage.setItem('cima_pipeline', JSON.stringify(state.pipeline)); renderPipeline(); }
+}
+
+function renderPipelineSelect() {
+  const sel = document.getElementById('pl-profile');
+  if (!sel) return;
+  sel.innerHTML = state.profiles.map(function(p) {
+    return '<option value="' + p.id + '">' + p.name + '</option>';
+  }).join('');
+}
+
+function renderPipeline() {
+  const pl = state.pipeline;
+  const statusColors = { enviado: '#BA7517', respuesta_positiva: '#1D9E75', respuesta_negativa: '#A32D2D', confirmado: '#1D9E75', sin_respuesta: '#888' };
+
+  // Stats
+  const total = pl.length;
+  const confirmados = pl.filter(e => e.status === 'confirmado').length;
+  const positivos = pl.filter(e => e.status === 'respuesta_positiva' || e.status === 'confirmado').length;
+  const rate = total ? Math.round(positivos / total * 100) : 0;
+  const pendientes = pl.filter(e => e.followupDate && e.followupDate >= new Date().toISOString().slice(0,10) && e.status !== 'confirmado' && e.status !== 'respuesta_negativa').length;
+
+  const statsEl = document.getElementById('pipeline-stats');
+  if (statsEl) statsEl.innerHTML = [
+    { n: total, l: 'contactos totales', c: '#111' },
+    { n: confirmados, l: 'confirmados', c: '#1D9E75' },
+    { n: positivos, l: 'respuestas positivas', c: '#185FA5' },
+    { n: rate + '%', l: 'tasa de conversión', c: '#CF2959' },
+    { n: pendientes, l: 'seguimientos hoy', c: '#BA7517' },
+  ].map(s => `<div class="stat"><div class="stat-n" style="color:${s.c}">${s.n}</div><div class="stat-l">${s.l}</div></div>`).join('');
+
+  // By channel
+  const byChannel = {};
+  pl.forEach(e => {
+    if (!byChannel[e.channel]) byChannel[e.channel] = { total: 0, pos: 0 };
+    byChannel[e.channel].total++;
+    if (e.status === 'respuesta_positiva' || e.status === 'confirmado') byChannel[e.channel].pos++;
+  });
+  const chEl = document.getElementById('pipeline-by-channel');
+  if (chEl) {
+    if (!Object.keys(byChannel).length) { chEl.innerHTML = '<div style="font-size:12px;color:var(--gray)">Sin datos aún.</div>'; }
+    else chEl.innerHTML = Object.entries(byChannel).map(([ch, d]) => {
+      const pct = Math.round(d.pos / d.total * 100);
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:11px;color:var(--gray);min-width:70px">${ch}</span>
+        <div style="flex:1;height:6px;background:var(--bg);border-radius:3px;overflow:hidden">
+          <div style="height:6px;border-radius:3px;background:#CF2959;width:${pct}%"></div>
+        </div>
+        <span style="font-size:11px;color:var(--gray);min-width:50px;text-align:right">${d.pos}/${d.total} (${pct}%)</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Followups
+  const today = new Date().toISOString().slice(0,10);
+  const followups = pl.filter(e => e.followupDate && e.status !== 'confirmado' && e.status !== 'respuesta_negativa').sort((a,b) => a.followupDate.localeCompare(b.followupDate)).slice(0, 5);
+  const fuEl = document.getElementById('pipeline-followup');
+  if (fuEl) {
+    if (!followups.length) { fuEl.innerHTML = '<div style="font-size:12px;color:var(--gray)">Sin seguimientos pendientes.</div>'; }
+    else fuEl.innerHTML = followups.map(e => {
+      const overdue = e.followupDate < today;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border)">
+        <div>
+          <div style="font-size:12px;font-weight:500">${e.profileName}</div>
+          <div style="font-size:10px;color:var(--gray)">${e.nextStep || '—'}</div>
+        </div>
+        <div style="font-size:10px;font-weight:500;color:${overdue ? '#A32D2D' : '#BA7517'}">${e.followupDate}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Table
+  const tbody = document.getElementById('pipeline-table');
+  if (!tbody) return;
+  if (!pl.length) { tbody.innerHTML = '<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--gray);font-size:12px">Sin contactos registrados. Pulsa "+ Registrar contacto" para empezar.</td></tr>'; return; }
+
+  tbody.innerHTML = pl.map(e => {
+    const sc = statusColors[e.status] || '#888';
+    const overdue = e.followupDate && e.followupDate < new Date().toISOString().slice(0,10) && e.status !== 'confirmado' && e.status !== 'respuesta_negativa';
+    return `<tr style="border-bottom:0.5px solid var(--border);transition:background 0.1s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+      <td style="padding:10px 14px;font-weight:500">${e.profileName}</td>
+      <td style="padding:10px 14px;color:var(--gray)">${e.event}</td>
+      <td style="padding:10px 14px;color:var(--gray)">${e.channel}</td>
+      <td style="padding:10px 14px;color:var(--gray)">${e.date}</td>
+      <td style="padding:10px 14px">
+        <select onchange="updatePipelineStatus(${e.id}, this.value)" style="font-size:11px;padding:3px 6px;border:1px solid ${sc}40;border-radius:6px;color:${sc};background:${sc}12;font-family:inherit;cursor:pointer;outline:none">
+          ${['enviado','respuesta_positiva','respuesta_negativa','confirmado','sin_respuesta'].map(s =>
+            `<option value="${s}" ${e.status===s?'selected':''}>${s.replace(/_/g,' ')}</option>`
+          ).join('')}
+        </select>
+      </td>
+      <td style="padding:10px 14px;font-size:11px;color:${overdue?'#A32D2D':'var(--gray)'}">${e.nextStep || '—'} ${e.followupDate ? '<span style="opacity:0.7">· '+e.followupDate+'</span>' : ''}</td>
+      <td style="padding:10px 14px;text-align:center"><button onclick="deletePipelineEntry(${e.id})" style="background:none;border:none;cursor:pointer;color:var(--lgray);font-size:15px;line-height:1">&times;</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// -- IDEAS ---------------------------------------------------------------------
+
+function toggleArea(btn) { btn.classList.toggle('active'); }
+
+async function generateIdeas() {
+  const _pwd = sessionStorage.getItem('cima_session_pwd'); if (!_pwd) { window.location.href='/'; return; }
+  const btn = document.getElementById('ideas-btn');
+  const output = document.getElementById('ideas-output');
+  btn.disabled = true; btn.textContent = 'Analizando y generando ideas...';
+  output.innerHTML = '<div style="color:var(--gray);font-style:italic">Buscando referencias externas y generando análisis...</div>';
+
+  const good = document.getElementById('ideas-good').value;
+  const bad = document.getElementById('ideas-bad').value;
+  const areas = [...document.querySelectorAll('#ideas-areas .chip.active')].map(b => b.dataset.area);
+
+  const prompt = `Eres un estratega creativo especializado en comunidades y eventos para jóvenes profesionales. Analiza CIMA y genera ideas accionables.
+
+CONTEXTO DE CIMA (aportado por el equipo):
+- Qué funciona bien: ${good || 'sold out en todas las ediciones, comunidad activa, calidad de ponentes'}
+- Qué falla o tiene margen: ${bad || 'empaquetado, retención post-evento, marca visual, sentido de pertenencia'}
+
+CIMA: evento sin ánimo de lucro para jóvenes 22-30 años emprendedores en Madrid. Formato ponencia (100 personas, 45min + networking) y cena íntima (15 personas). Sold out histórico. Comunidad creciente.
+
+Áreas de análisis solicitadas: ${areas.join(', ')}
+
+Para cada área, busca en internet referentes similares (Nova Talent, FOMOfest, Endeavor, YC events, eventos de comunidad europeos) y genera 3-5 ideas concretas y accionables.
+
+Formato de respuesta — para cada área:
+**[ÁREA EN MAYÚSCULAS]**
+- Idea concreta 1 (1-2 líneas, qué hacer y por qué)
+- Idea concreta 2
+...
+
+Sé creativo pero realista. Prioriza ideas de alto impacto y bajo coste. Máximo 400 palabras total.`;
+
+  try {
+    const text = await callClaude([{ role: 'user', content: prompt }], true);
+    output.innerHTML = '<div style="font-size:13px;line-height:1.7">' + mdToHtml(text) + '</div>';
+    document.getElementById('ideas-saved').style.display = 'block';
+    document.getElementById('ideas-saved-list').innerHTML = '<div style="font-size:12px;color:var(--gray)">Ideas generadas el ' + new Date().toLocaleDateString('es-ES') + '</div>';
+  } catch(e) {
+    output.innerHTML = '<div style="color:var(--red)">Error: ' + e.message + '</div>';
+  }
+
+  btn.disabled = false; btn.textContent = 'Generar ideas (activación manual)';
+}
+
+function saveIdeas() {
+  const text = document.getElementById('ideas-output').innerHTML;
+  const entry = { date: new Date().toISOString(), html: text };
+  state.ideasHistory.unshift(entry);
+  if (state.ideasHistory.length > 10) state.ideasHistory.pop();
+  localStorage.setItem('cima_ideas', JSON.stringify(state.ideasHistory));
+  document.getElementById('ideas-saved-list').innerHTML = '<div style="font-size:12px;color:var(--green);font-weight:500">Ideas guardadas correctamente.</div>';
+}
+
+// -- DASHBOARD -----------------------------------------------------------------
+
+function renderDashboard() {
+  const d = state.dashData;
+  const container = document.getElementById('dashboard-content');
+  if (!container) return;
+
+  const totalAsistentes = d.ediciones.reduce((a, e) => a + (e.asistentes || 0), 0);
+  const soldOuts = d.ediciones.filter(e => e.sold_out).length;
+  const ponencias = d.ediciones.filter(e => e.formato === 'ponencia').length;
+  const cenas = d.ediciones.filter(e => e.formato === 'cena').length;
+  const maxAtt = Math.max(...d.ediciones.map(e => e.asistentes || 0), 1);
+
+  container.innerHTML = `
+    <div class="stats" style="margin-bottom:20px">
+      <div class="stat"><div class="stat-n" style="color:var(--pink)">${d.ediciones.length}</div><div class="stat-l">ediciones totales</div></div>
+      <div class="stat"><div class="stat-n" style="color:var(--green)">${soldOuts}</div><div class="stat-l">sold outs</div></div>
+      <div class="stat"><div class="stat-n">${totalAsistentes}</div><div class="stat-l">asistentes totales</div></div>
+      <div class="stat"><div class="stat-n" style="color:var(--blue)">${d.comunidad.linkedin || '—'}</div><div class="stat-l">comunidad LinkedIn</div></div>
+      <div class="stat"><div class="stat-n" style="color:var(--green)">${d.comunidad.whatsapp || '—'}</div><div class="stat-l">comunidad WhatsApp</div></div>
+      <div class="stat"><div class="stat-n" style="color:var(--pink)">${d.comunidad.total || '—'}</div><div class="stat-l">comunidad total</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px">
+        <div style="font-size:12px;font-weight:600;margin-bottom:14px">Asistencia por edición</div>
+        ${d.ediciones.map(e => `
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+              <span style="font-weight:500">${e.nombre}</span>
+              <span style="color:var(--gray)">${e.asistentes} personas · ${e.sold_out ? '<span style="color:var(--green)">sold out</span>' : ''}</span>
+            </div>
+            <div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden">
+              <div style="height:8px;border-radius:4px;background:${e.formato==='cena'?'#185FA5':'#CF2959'};width:${Math.round(e.asistentes/maxAtt*100)}%;transition:width 0.5s"></div>
+            </div>
+          </div>
+        `).join('')}
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--gray)"><div style="width:10px;height:10px;border-radius:2px;background:#CF2959"></div>Ponencia</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--gray)"><div style="width:10px;height:10px;border-radius:2px;background:#185FA5"></div>Cena</div>
+        </div>
+      </div>
+
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px">
+        <div style="font-size:12px;font-weight:600;margin-bottom:14px">Comunidad y mercados</div>
+        ${[
+          { label: 'LinkedIn', val: d.comunidad.linkedin, color: '#0A66C2', max: 2000 },
+          { label: 'WhatsApp', val: d.comunidad.whatsapp, color: '#25D366', max: 500 },
+          { label: 'Instagram', val: d.comunidad.instagram, color: '#E1306C', max: 5000 },
+          { label: 'Total comunidad', val: d.comunidad.total, color: '#CF2959', max: 5000 },
+        ].map(c => c.val ? `
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+              <span style="font-weight:500">${c.label}</span>
+              <span style="color:var(--gray)">${c.val.toLocaleString()}</span>
+            </div>
+            <div style="height:6px;background:var(--bg);border-radius:3px;overflow:hidden">
+              <div style="height:6px;border-radius:3px;background:${c.color};width:${Math.min(Math.round(c.val/c.max*100),100)}%"></div>
+            </div>
+          </div>` : '').join('')}
+        <div style="margin-top:14px">
+          <div style="font-size:11px;font-weight:600;margin-bottom:8px;color:var(--gray)">MERCADOS</div>
+          ${Object.entries(d.mercados).map(([m, active]) =>
+            `<span style="font-size:10px;padding:3px 9px;border-radius:10px;margin-right:4px;margin-bottom:4px;display:inline-block;background:${active?'#CF295918':'var(--bg)'};color:${active?'#CF2959':'var(--gray)'};border:1px solid ${active?'#CF295940':'var(--border)'};font-weight:${active?'600':'400'}">${m}</span>`
+          ).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:12px">Historial de ediciones</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="border-bottom:1px solid var(--border)">
+          <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--gray);font-weight:600">Edición</th>
+          <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--gray);font-weight:600">Fecha</th>
+          <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--gray);font-weight:600">Ponente</th>
+          <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--gray);font-weight:600">Formato</th>
+          <th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--gray);font-weight:600">Asistentes</th>
+          <th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--gray);font-weight:600">Resultado</th>
+        </tr></thead>
+        <tbody>
+          ${d.ediciones.map(e => `<tr style="border-bottom:0.5px solid var(--border)">
+            <td style="padding:10px 12px;font-weight:500">${e.nombre}</td>
+            <td style="padding:10px 12px;color:var(--gray)">${e.fecha}</td>
+            <td style="padding:10px 12px;color:var(--gray)">${e.ponente}</td>
+            <td style="padding:10px 12px"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${e.formato==='cena'?'#E6F1FB':'#FBEAF0'};color:${e.formato==='cena'?'#185FA5':'#CF2959'};font-weight:500">${e.formato}</span></td>
+            <td style="padding:10px 12px;text-align:center;font-weight:500">${e.asistentes}</td>
+            <td style="padding:10px 12px;text-align:center"><span style="font-size:10px;color:${e.sold_out?'var(--green)':'var(--gray)'};font-weight:${e.sold_out?600:400}">${e.sold_out?'Sold out':'—'}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    ${d.notas ? `<div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px">Notas</div>
+      <div style="font-size:12px;color:var(--gray);line-height:1.6">${d.notas}</div>
+    </div>` : ''}
+  `;
+}
+
+function showDashboardEdit() {
+  const d = state.dashData;
+  const fields = document.getElementById('dash-edit-fields');
+  fields.innerHTML = `
+    <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--gray)">COMUNIDAD</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      ${[['linkedin','LinkedIn'],['whatsapp','WhatsApp'],['instagram','Instagram'],['total','Total comunidad']].map(([k,l]) =>
+        `<div class="form-group"><label>${l}</label><input type="number" id="dc-${k}" value="${d.comunidad[k]||''}" placeholder="0" style="width:100%;padding:7px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit"></div>`
+      ).join('')}
+    </div>
+    <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--gray)">MERCADOS ACTIVOS</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+      ${Object.entries(d.mercados).map(([m, active]) =>
+        `<button class="chip ${active?'active':''}" data-market="${m}" onclick="this.classList.toggle('active')" style="text-transform:capitalize">${m}</button>`
+      ).join('')}
+    </div>
+    <div class="form-group" style="margin-bottom:14px"><label>Notas generales</label><textarea id="dc-notas" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;resize:vertical;min-height:70px;outline:none">${d.notas||''}</textarea></div>
+    <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--gray)">EDICIONES — <button onclick="addDashEdicion()" style="font-size:11px;color:var(--pink);background:none;border:none;cursor:pointer;font-family:inherit;font-weight:500">+ Añadir edición</button></div>
+    <div id="dc-ediciones">
+      ${d.ediciones.map((e,i) => `
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:6px;margin-bottom:6px;align-items:center">
+          <input type="text" value="${e.nombre}" placeholder="Nombre" data-ei="${i}" data-ef="nombre" onchange="updateDashEdicion(this)" style="padding:6px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit">
+          <input type="text" value="${e.fecha}" placeholder="YYYY-MM" data-ei="${i}" data-ef="fecha" onchange="updateDashEdicion(this)" style="padding:6px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit">
+          <input type="text" value="${e.ponente}" placeholder="Ponente" data-ei="${i}" data-ef="ponente" onchange="updateDashEdicion(this)" style="padding:6px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit">
+          <input type="number" value="${e.asistentes}" placeholder="Asistentes" data-ei="${i}" data-ef="asistentes" onchange="updateDashEdicion(this)" style="padding:6px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit">
+          <button onclick="removeDashEdicion(${i})" style="background:none;border:none;cursor:pointer;color:var(--lgray);font-size:15px">&times;</button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  document.getElementById('dash-edit-modal').style.display = 'flex';
+}
+
+function updateDashEdicion(el) {
+  const i = parseInt(el.dataset.ei);
+  const f = el.dataset.ef;
+  if (f === 'asistentes') state.dashData.ediciones[i][f] = parseInt(el.value) || 0;
+  else state.dashData.ediciones[i][f] = el.value;
+}
+
+function addDashEdicion() {
+  state.dashData.ediciones.push({ nombre: 'Nueva edición', fecha: new Date().toISOString().slice(0,7), asistentes: 0, formato: 'ponencia', ponente: '', sold_out: false });
+  showDashboardEdit();
+}
+
+function removeDashEdicion(i) {
+  state.dashData.ediciones.splice(i, 1);
+  showDashboardEdit();
+}
+
+function saveDashboardData() {
+  ['linkedin','whatsapp','instagram','total'].forEach(k => {
+    const el = document.getElementById('dc-' + k);
+    if (el) state.dashData.comunidad[k] = parseInt(el.value) || 0;
+  });
+  const notasEl = document.getElementById('dc-notas');
+  if (notasEl) state.dashData.notas = notasEl.value;
+  const markets = {};
+  document.querySelectorAll('[data-market]').forEach(b => { markets[b.dataset.market] = b.classList.contains('active'); });
+  if (Object.keys(markets).length) state.dashData.mercados = markets;
+  localStorage.setItem('cima_dashboard', JSON.stringify(state.dashData));
+  document.getElementById('dash-edit-modal').style.display = 'none';
+  renderDashboard();
+}
+
+async function exportDashboardPDF() {
+  const btn = document.getElementById('dash-export-btn');
+  const _pwd = sessionStorage.getItem('cima_session_pwd'); if (!_pwd) { window.location.href='/'; return; }
+  btn.disabled = true; btn.textContent = 'Generando PDF...';
+  try {
+    const d = state.dashData;
+    const totalAtt = d.ediciones.reduce((a,e) => a + e.asistentes, 0);
+    const summary = await callClaude([{ role: 'user', content: `Genera un resumen ejecutivo de CIMA en formato texto para un PDF de 1 página. Datos: ${d.ediciones.length} ediciones, ${totalAtt} asistentes totales, ${d.ediciones.filter(e=>e.sold_out).length} sold outs, comunidad LinkedIn: ${d.comunidad.linkedin||0}, WhatsApp: ${d.comunidad.whatsapp||0}. Notas: ${d.notas||'ninguna'}. Máximo 200 palabras, tono ejecutivo, en español.` }], false);
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head><title>CIMA Dashboard</title><style>body{font-family:sans-serif;padding:40px;color:#111;max-width:800px;margin:0 auto}.pink{color:#CF2959}.gray{color:#888}.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:20px 0}.stat-box{border:1px solid #eee;border-radius:8px;padding:16px;text-align:center}.stat-n{font-size:28px;font-weight:700}.stat-l{font-size:11px;color:#888;margin-top:4px}</style></head><body>
+      <h1 style="font-size:28px;font-weight:900;margin-bottom:4px">CIMA <span class="pink">·</span> Dashboard</h1>
+      <p class="gray" style="margin-bottom:24px">Generado el ${new Date().toLocaleDateString('es-ES', {day:'numeric',month:'long',year:'numeric'})}</p>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="stat-n pink">${d.ediciones.length}</div><div class="stat-l">ediciones</div></div>
+        <div class="stat-box"><div class="stat-n">${totalAtt}</div><div class="stat-l">asistentes totales</div></div>
+        <div class="stat-box"><div class="stat-n" style="color:#1D9E75">${d.ediciones.filter(e=>e.sold_out).length}</div><div class="stat-l">sold outs</div></div>
+        <div class="stat-box"><div class="stat-n">${d.comunidad.linkedin||0}</div><div class="stat-l">LinkedIn</div></div>
+        <div class="stat-box"><div class="stat-n">${d.comunidad.whatsapp||0}</div><div class="stat-l">WhatsApp</div></div>
+        <div class="stat-box"><div class="stat-n pink">${d.comunidad.total||0}</div><div class="stat-l">comunidad total</div></div>
+      </div>
+      <h2 style="margin-top:24px">Resumen ejecutivo</h2>
+      <p style="line-height:1.7;color:#444">${summary.split('\n').join('<br>')}</p>
+      <h2 style="margin-top:24px">Historial de ediciones</h2>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <tr style="border-bottom:2px solid #eee">${['Edición','Fecha','Ponente','Asistentes','Resultado'].map(h=>`<th style="padding:8px;text-align:left;color:#888;font-weight:600">${h}</th>`).join('')}</tr>
+        ${d.ediciones.map(e=>`<tr style="border-bottom:1px solid #f5f5f5"><td style="padding:8px;font-weight:500">${e.nombre}</td><td style="padding:8px;color:#888">${e.fecha}</td><td style="padding:8px;color:#888">${e.ponente}</td><td style="padding:8px;text-align:center">${e.asistentes}</td><td style="padding:8px;text-align:center;color:${e.sold_out?'#1D9E75':'#888'}">${e.sold_out?'Sold out':'—'}</td></tr>`).join('')}
+      </table>
+    </body></html>`);
+    win.document.close();
+    setTimeout(() => win.print(), 500);
+  } catch(e) { alert('Error: ' + e.message); }
+  btn.disabled = false; btn.textContent = 'Exportar PDF';
+}
+
+
+// -- CONTACTS ------------------------------------------------------------------
+
+const WARMTH_CONFIG = {
+  caliente: { label: 'Caliente', color: '#1D9E75', bg: '#E1F5EE' },
+  templado: { label: 'Templado', color: '#BA7517', bg: '#FAEEDA' },
+  frio:     { label: 'Frío',     color: '#888888', bg: '#F1EFE8' },
+};
+
+const CAT_CONFIG = {
+  candidato_cima: { label: 'Candidato CIMA', color: '#CF2959', bg: '#FBEAF0' },
+  puente:         { label: 'Puente',          color: '#185FA5', bg: '#E6F1FB' },
+  red:            { label: 'Solo red',        color: '#888888', bg: '#F1EFE8' },
+};
+
+function setContactFilter(val, el) {
+  state.activeContactFilter = val;
+  document.querySelectorAll('#contacts-filters .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderContacts();
+}
+
+function getFilteredContacts() {
+  const q = (document.getElementById('contacts-search')?.value || '').toLowerCase();
+  const f = state.activeContactFilter;
+  return state.contacts.filter(c => {
+    if (f === 'all') return true;
+    if (f === 'caliente' || f === 'templado' || f === 'frio') return c.warmth === f;
+    return c.category === f;
+  }).filter(c =>
+    !q || c.name.toLowerCase().includes(q) ||
+    (c.company || '').toLowerCase().includes(q) ||
+    (c.role || '').toLowerCase().includes(q)
+  );
+}
+
+function renderContacts() {
+  const grid = document.getElementById('contacts-grid');
+  if (!grid) return;
+  const filtered = getFilteredContacts();
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty"><div class="empty-title">Sin contactos' + (state.activeContactFilter !== 'all' ? ' con este filtro' : '') + '</div><div class="empty-sub">Pulsa \"+ Añadir contacto\" para empezar</div></div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(function(c) {
+    const wc = WARMTH_CONFIG[c.warmth] || WARMTH_CONFIG.frio;
+    const cc = CAT_CONFIG[c.category] || CAT_CONFIG.red;
+    const ini = c.name.split(' ').slice(0,2).map(function(w){ return w[0]; }).join('').toUpperCase();
+
+    const methods = [];
+    if (c.email) methods.push('<a href="mailto:' + c.email + '" onclick="event.stopPropagation()" style="color:#185FA5;text-decoration:none;font-size:11px">' + c.email + '</a>');
+    if (c.phone) methods.push('<span style="font-size:11px;color:var(--gray)">' + c.phone + '</span>');
+    if (c.linkedin) methods.push('<a href="' + (c.linkedin.startsWith('http') ? c.linkedin : 'https://' + c.linkedin) + '" target="_blank" onclick="event.stopPropagation()" style="color:#185FA5;text-decoration:none;font-size:11px">LinkedIn</a>');
+    if (c.social) methods.push('<span style="font-size:11px;color:var(--gray)">' + c.social + '</span>');
+
+    return '<div class="pcard" style="cursor:pointer" data-contact-id="' + c.id + '" onclick="handleContactClick(event,this)">' +
+      '<div class="pcard-head">' +
+        '<div class="avatar" style="background:' + cc.bg + ';color:' + cc.color + '">' + ini + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="pcard-name" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' + c.name +
+            '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:' + wc.bg + ';color:' + wc.color + ';font-weight:500">' + wc.label + '</span>' +
+          '</div>' +
+          '<div class="pcard-role">' + [c.role, c.company].filter(Boolean).join(' · ') + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">' +
+        '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:' + cc.bg + ';color:' + cc.color + ';font-weight:500">' + cc.label + '</span>' +
+      '</div>' +
+      (c.context ? '<div style="font-size:11px;color:var(--gray);margin-bottom:6px;line-height:1.4">' + c.context + '</div>' : '') +
+      (c.bridge ? '<div style="font-size:11px;color:#185FA5;margin-bottom:6px">Puente → ' + c.bridge + '</div>' : '') +
+      (methods.length ? '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;padding-top:8px;border-top:0.5px solid var(--border)">' + methods.join('') + '</div>' : '') +
+      '<div class="pcard-actions">' +
+        '<button class="pact" data-action="edit" style="flex:none;padding:5px 10px">Editar</button>' +
+        '<button class="pact" data-action="delete" style="flex:none;padding:5px 10px;color:var(--red)">Borrar</button>' +
+        (c.category === 'candidato_cima' ? '<button class="pact primary" data-action="evaluate" style="flex:1">Evaluar para CIMA</button>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function handleContactClick(event, el) {
+  const id = el.dataset.contactId;
+  const action = event.target.dataset.action;
+  if (action === 'edit') { event.stopPropagation(); openContactForm(id); }
+  else if (action === 'delete') { event.stopPropagation(); deleteContact(id); }
+  else if (action === 'evaluate') {
+    event.stopPropagation();
+    const c = state.contacts.find(function(x){ return x.id === id; });
+    if (c) askAgent('Busca informacion sobre ' + c.name + (c.company ? ' de ' + c.company : '') + ' y evalua si encajaria como ponente o en una cena CIMA');
+  }
+  else openContactForm(id);
+}
+
+
+function openContactForm(id) {
+  state.editingContactId = id || null;
+  const c = id ? state.contacts.find(x => x.id === id) : null;
+
+  document.getElementById('contact-form-title').textContent = c ? 'Editar contacto' : 'Añadir contacto';
+  document.getElementById('cf-name').value = c?.name || '';
+  document.getElementById('cf-role').value = c?.role || '';
+  document.getElementById('cf-company').value = c?.company || '';
+  document.getElementById('cf-email').value = c?.email || '';
+  document.getElementById('cf-phone').value = c?.phone || '';
+  document.getElementById('cf-linkedin').value = c?.linkedin || '';
+  document.getElementById('cf-social').value = c?.social || '';
+  document.getElementById('cf-category').value = c?.category || 'red';
+  document.getElementById('cf-warmth').value = c?.warmth || 'templado';
+  document.getElementById('cf-context').value = c?.context || '';
+  document.getElementById('cf-bridge').value = c?.bridge || '';
+  document.getElementById('cf-notes').value = c?.notes || '';
+
+  document.getElementById('contact-form-modal').style.display = 'flex';
+}
+
+function closeContactForm() {
+  document.getElementById('contact-form-modal').style.display = 'none';
+  state.editingContactId = null;
+}
+
+function saveContact() {
+  const name = document.getElementById('cf-name').value.trim();
+  if (!name) { document.getElementById('cf-name').focus(); return; }
+
+  const contact = {
+    id: state.editingContactId || 'c-' + Date.now(),
+    name,
+    role: document.getElementById('cf-role').value.trim(),
+    company: document.getElementById('cf-company').value.trim(),
+    email: document.getElementById('cf-email').value.trim(),
+    phone: document.getElementById('cf-phone').value.trim(),
+    linkedin: document.getElementById('cf-linkedin').value.trim(),
+    social: document.getElementById('cf-social').value.trim(),
+    category: document.getElementById('cf-category').value,
+    warmth: document.getElementById('cf-warmth').value,
+    context: document.getElementById('cf-context').value.trim(),
+    bridge: document.getElementById('cf-bridge').value.trim(),
+    notes: document.getElementById('cf-notes').value.trim(),
+    createdAt: state.editingContactId
+      ? (state.contacts.find(x => x.id === state.editingContactId)?.createdAt || Date.now())
+      : Date.now(),
+  };
+
+  if (state.editingContactId) {
+    const idx = state.contacts.findIndex(x => x.id === state.editingContactId);
+    if (idx !== -1) state.contacts[idx] = contact;
+  } else {
+    state.contacts.unshift(contact);
+  }
+
+  localStorage.setItem('cima_contacts', JSON.stringify(state.contacts));
+  closeContactForm();
+  renderContacts();
+  renderDirectorio();
+}
+
+function deleteContact(id) {
+  if (!confirm('¿Borrar este contacto?')) return;
+  state.contacts = state.contacts.filter(c => c.id !== id);
+  localStorage.setItem('cima_contacts', JSON.stringify(state.contacts));
+  renderContacts();
+  renderDirectorio();
+}
+
+// -- DIRECTORIO ----------------------------------------------------------------
+
+function buildDirectorioEntries() {
+  // From profiles: only those with at least one contact method
+  const fromProfiles = state.profiles
+    .filter(p => p.contact.email || p.contact.linkedin || p.contact.instagram || p.contact.twitter || p.contact.phone)
+    .map(p => ({
+      id: 'p-' + p.id,
+      name: p.name,
+      role: p.role,
+      company: '',
+      email: p.contact.email,
+      phone: p.contact.phone,
+      linkedin: p.contact.linkedin,
+      social: p.contact.instagram || p.contact.twitter,
+      via: p.contact.via,
+      warmth: p.status === 'confirmado' ? 'caliente' : p.status === 'en_contacto' ? 'templado' : 'frio',
+      category: 'candidato_cima',
+      tier: p.tier,
+      source: 'perfil',
+      notes: p.notes,
+    }));
+
+  // From manual contacts
+  const fromContacts = state.contacts.map(c => ({ ...c, source: 'manual', tier: null }));
+
+  return [...fromProfiles, ...fromContacts].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function renderDirectorio() {
+  const container = document.getElementById('directorio-list');
+  const statsEl = document.getElementById('dir-stats');
+  if (!container) return;
+
+  const q = (document.getElementById('dir-search')?.value || '').toLowerCase();
+  const all = buildDirectorioEntries();
+  const filtered = q ? all.filter(e =>
+    e.name.toLowerCase().includes(q) ||
+    (e.role || '').toLowerCase().includes(q) ||
+    (e.company || '').toLowerCase().includes(q)
+  ) : all;
+
+  // Stats
+  if (statsEl) {
+    const withEmail = filtered.filter(e => e.email).length;
+    const withLinkedIn = filtered.filter(e => e.linkedin).length;
+    const calientes = filtered.filter(e => e.warmth === 'caliente').length;
+    statsEl.innerHTML = [
+      { n: filtered.length, l: 'contactos totales', c: '#111' },
+      { n: all.filter(e => e.source === 'perfil').length, l: 'de perfiles CIMA', c: '#CF2959' },
+      { n: state.contacts.length, l: 'contactos manuales', c: '#185FA5' },
+      { n: calientes, l: 'relaciones calientes', c: '#1D9E75' },
+    ].map(s => '<div class="stat"><div class="stat-n" style="color:' + s.c + '">' + s.n + '</div><div class="stat-l">' + s.l + '</div></div>').join('');
+  }
+
+  if (!filtered.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-title">Sin contactos</div><div class="empty-sub">Los perfiles con datos de contacto y tus contactos manuales aparecerán aquí</div></div>';
+    return;
+  }
+
+  // Group by first letter
+  const grouped = {};
+  filtered.forEach(e => {
+    const letter = e.name[0].toUpperCase();
+    if (!grouped[letter]) grouped[letter] = [];
+    grouped[letter].push(e);
+  });
+
+  container.innerHTML = Object.entries(grouped).sort(([a],[b]) => a.localeCompare(b)).map(([letter, entries]) =>
+    '<div style="margin-bottom:16px">' +
+      '<div style="font-size:11px;font-weight:700;color:var(--pink);letter-spacing:0.1em;padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:8px">' + letter + '</div>' +
+      entries.map(e => {
+        const wc = WARMTH_CONFIG[e.warmth] || WARMTH_CONFIG.frio;
+        const cc = CAT_CONFIG[e.category] || CAT_CONFIG.red;
+        const ini = e.name.split(' ').slice(0,2).map(w => w[0]).join('').toUpperCase();
+
+        const methods = [];
+        if (e.email) methods.push('<a href="mailto:' + e.email + '" style="color:#185FA5;font-size:11px;text-decoration:none">' + e.email + '</a>');
+        if (e.phone) methods.push('<span style="font-size:11px;color:var(--gray)">' + e.phone + '</span>');
+        if (e.linkedin) methods.push('<a href="' + (e.linkedin.startsWith('http') ? e.linkedin : 'https://' + e.linkedin) + '" target="_blank" style="color:#185FA5;font-size:11px;text-decoration:none">LinkedIn</a>');
+        if (e.social) methods.push('<span style="font-size:11px;color:var(--gray)">' + e.social + '</span>');
+        if (e.via && !methods.length) methods.push('<span style="font-size:11px;color:var(--gray);font-style:italic">' + e.via + '</span>');
+
+        return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border)">' +
+          '<div style="width:36px;height:36px;border-radius:50%;background:' + cc.bg + ';color:' + cc.color + ';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">' + ini + '</div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+              e.name +
+              '<span style="font-size:9px;padding:2px 6px;border-radius:8px;background:' + wc.bg + ';color:' + wc.color + ';font-weight:600">' + wc.label + '</span>' +
+              '<span style="font-size:9px;padding:2px 6px;border-radius:8px;background:' + cc.bg + ';color:' + cc.color + ';font-weight:600">' + cc.label + '</span>' +
+              (e.source === 'manual' ? '<span style="font-size:9px;padding:2px 6px;border-radius:8px;background:var(--bg);color:var(--gray)">Manual</span>' : '') +
+            '</div>' +
+            '<div style="font-size:11px;color:var(--gray);margin-top:1px">' + [e.role, e.company].filter(Boolean).join(' · ') + '</div>' +
+          '</div>' +
+          (methods.length ? '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">' + methods.map(m => '<div>' + m + '</div>').join('') + '</div>' : '<div style="font-size:10px;color:var(--lgray);font-style:italic;flex-shrink:0">sin contacto</div>') +
+        '</div>';
+      }).join('') +
+    '</div>'
+  ).join('');
+}
+
+function exportDirectorio() {
+  const all = buildDirectorioEntries();
+  const headers = ['Nombre','Rol','Empresa','Email','Teléfono','LinkedIn','RRSS','Categoría','Temperatura','Fuente','Notas'];
+  const rows = all.map(e => [
+    e.name, e.role||'', e.company||'', e.email||'', e.phone||'',
+    e.linkedin||'', e.social||'', e.category||'', e.warmth||'',
+    e.source||'', (e.notes||'').replace(/,/g,';'),
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'cima-directorio-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+
+// -- UTILS ---------------------------------------------------------------------
+function setNextScanDate() {
+  const now = new Date();
+  const day = now.getDay();
+  const daysUntilMonday = day === 1 ? 7 : (8 - day) % 7 || 7;
+  const next = new Date(now);
+  next.setDate(now.getDate() + daysUntilMonday);
+  next.setHours(9, 0, 0, 0);
+  document.getElementById('next-scan-date').textContent =
+    'Lunes ' + next.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }) + ' a las 9:00h';
+}
+
+// Auto-resize textarea
+document.addEventListener('DOMContentLoaded', () => {
+  const ta = document.getElementById('chat-input');
+  if (ta) {
+    ta.addEventListener('input', () => {
+      ta.style.height = 'auto';
+      ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
+    });
+  }
+});
+
+// Close modals on overlay click
+document.getElementById('profile-modal').addEventListener('click', function(e) {
+  if (e.target === e.currentTarget) closeProfileModal();
+});
+document.getElementById('apikey-overlay').addEventListener('click', function(e) {
+  if (e.target === e.currentTarget && state.apiKey) document.getElementById('apikey-overlay').classList.remove('open');
+});
+
+// Safe init with error boundary
+try {
+  init();
+} catch(e) {
+  console.error('Init error:', e);
+  // Try partial init
+  try { updateApiStatus(); } catch(e2) {}
+  try { renderStats(); } catch(e2) {}
+  try { renderFilters(); } catch(e2) {}
+  try { renderProfiles(); } catch(e2) {}
+  try { renderConfirmed(); } catch(e2) {}
+  try { renderOutreachSelect(); } catch(e2) {}
+  try { renderPipelineSelect(); } catch(e2) {}
+  try { renderPipeline(); } catch(e2) {}
+  try { renderDashboard(); } catch(e2) {}
+  try { renderContacts(); } catch(e2) {}
+  try { renderDirectorio(); } catch(e2) {}
+  try { setNextScanDate(); } catch(e2) {}
+  if (!state.apiKey) try { showApiKeyModal(); } catch(e2) {}
+}
+</script>
+</body>
+</html>

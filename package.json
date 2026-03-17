@@ -1,0 +1,9 @@
+{
+  "name": "cima-agent",
+  "version": "1.0.0",
+  "description": "CIMA Intelligence Agent",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  }
+}
