@@ -525,18 +525,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
 
-  <div class="filters" style="margin-bottom:16px">
-    <button class="chip active" onclick="setContactFilter('all',this)">Todos</button>
-    <button class="chip" onclick="setContactFilter('candidato',this)" style="color:#CF2959;border-color:#CF2959">Candidatos CIMA</button>
-    <button class="chip" onclick="setContactFilter('red',this)" style="color:#185FA5;border-color:#185FA5">Red personal</button>
-    <button class="chip" onclick="setContactFilter('puente',this)" style="color:#1D9E75;border-color:#1D9E75">Puentes de acceso</button>
-    <span style="width:1px;height:20px;background:var(--border);display:inline-block;margin:0 4px;align-self:center"></span>
-    <button class="chip" onclick="setContactWarmth('all',this)">Cualquier calidez</button>
-    <button class="chip" onclick="setContactWarmth('calido',this)">Cálido</button>
-    <button class="chip" onclick="setContactWarmth('tibio',this)">Tibio</button>
-    <button class="chip" onclick="setContactWarmth('frio',this)">Frío</button>
-  </div>
-
   <div id="contacts-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px"></div>
   <div id="contacts-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px"></div>
 
@@ -604,7 +592,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
 
-  <div class="filters" style="margin-bottom:16px">
+  <div class="filters" id="dir-filters" style="margin-bottom:16px">
     <button class="chip active" onclick="setDirFilter('all',this)">Todos</button>
     <button class="chip" onclick="setDirFilter('perfil',this)">Perfiles CIMA</button>
     <button class="chip" onclick="setDirFilter('contacto',this)">Contactos manuales</button>
@@ -649,14 +637,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 
   <div class="filters" id="contacts-filters" style="margin-bottom:16px">
-    <button class="chip active" onclick="setContactFilter('all',this)">Todos</button>
-    <button class="chip" onclick="setContactFilter('candidato_cima',this)" style="color:var(--pink);border-color:var(--pink)">Candidato CIMA</button>
-    <button class="chip" onclick="setContactFilter('puente',this)" style="color:#185FA5;border-color:#185FA5">Puente</button>
-    <button class="chip" onclick="setContactFilter('red',this)">Solo red</button>
+    <button class="chip active" data-filter="all" onclick="setContactFilter('all',this)">Todos</button>
+    <button class="chip" data-filter="candidato_cima" onclick="setContactFilter('candidato_cima',this)">Candidato CIMA</button>
+    <button class="chip" data-filter="puente" onclick="setContactFilter('puente',this)">Puente</button>
+    <button class="chip" data-filter="red" onclick="setContactFilter('red',this)">Solo red</button>
     <span style="width:1px;height:20px;background:var(--border);display:inline-block;margin:0 4px"></span>
-    <button class="chip" onclick="setContactFilter('caliente',this)" style="color:#1D9E75;border-color:#1D9E75">Caliente</button>
-    <button class="chip" onclick="setContactFilter('templado',this)" style="color:#BA7517;border-color:#BA7517">Templado</button>
-    <button class="chip" onclick="setContactFilter('frio',this)" style="color:#888;border-color:#888">Frío</button>
+    <button class="chip" data-filter="caliente" onclick="setContactFilter('caliente',this)">Caliente</button>
+    <button class="chip" data-filter="templado" onclick="setContactFilter('templado',this)">Templado</button>
+    <button class="chip" data-filter="frio" onclick="setContactFilter('frio',this)">Frío</button>
   </div>
 
   <div id="contacts-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px"></div>
@@ -1923,29 +1911,14 @@ function init() {
 
 // -- API KEY ------------------------------------------------------------------
 function showApiKeyModal() {
-  document.getElementById('apikey-overlay').classList.add('open');
-  document.getElementById('apikey-input').value = state.apiKey;
+  // No modal in Vercel version - auth is handled at login page
+  window.location.href = '/';
 }
 function saveApiKey() {
-  const k = document.getElementById('apikey-input').value.trim();
-  if (!k) return;
-  state.apiKey = k;
-  localStorage.setItem('cima_api_key', k);
-  document.getElementById('apikey-overlay').classList.remove('open');
-  updateApiStatus();
+  // Not used in Vercel version
 }
 function updateApiStatus() {
-  const dot = document.getElementById('api-dot');
-  const txt = document.getElementById('api-status-text');
-  if (state.apiKey) {
-    dot.className = 'api-dot ok';
-    txt.textContent = 'API activa';
-    document.getElementById('api-key-btn').textContent = 'Cambiar API key';
-  } else {
-    dot.className = 'api-dot err';
-    txt.textContent = 'Sin API key';
-    document.getElementById('api-key-btn').textContent = 'Configurar API key';
-  }
+  // Auth handled server-side in Vercel version - no-op
 }
 
 // -- TABS ---------------------------------------------------------------------
@@ -2947,8 +2920,24 @@ const CAT_CONFIG = {
 
 function setContactFilter(val, el) {
   state.activeContactFilter = val;
-  document.querySelectorAll('#contacts-filters .chip').forEach(c => c.classList.remove('active'));
+  // Remove active from all chips and reset their appearance
+  document.querySelectorAll('#contacts-filters .chip').forEach(function(c) {
+    c.classList.remove('active');
+    c.style.color = '';
+    c.style.borderColor = '';
+    c.style.background = '';
+  });
+  // Activate selected chip with appropriate color
   el.classList.add('active');
+  const colors = {
+    candidato_cima: '#CF2959', puente: '#185FA5', red: '#888',
+    caliente: '#1D9E75', templado: '#BA7517', frio: '#888'
+  };
+  if (val !== 'all' && colors[val]) {
+    el.style.background = colors[val];
+    el.style.borderColor = colors[val];
+    el.style.color = '#fff';
+  }
   renderContacts();
 }
 
@@ -3098,6 +3087,13 @@ function deleteContact(id) {
 
 // -- DIRECTORIO ----------------------------------------------------------------
 
+function setDirFilter(val, el) {
+  state.activeDirFilter = val;
+  document.querySelectorAll('#dir-filters .chip').forEach(function(c){ c.classList.remove('active'); });
+  el.classList.add('active');
+  renderDirectorio();
+}
+
 function buildDirectorioEntries() {
   // From profiles: only those with at least one contact method
   const fromProfiles = state.profiles
@@ -3132,7 +3128,14 @@ function renderDirectorio() {
 
   const q = (document.getElementById('dir-search')?.value || '').toLowerCase();
   const all = buildDirectorioEntries();
-  const filtered = q ? all.filter(e =>
+  const f = state.activeDirFilter || 'all';
+  const prefiltered = f === 'all' ? all :
+    f === 'perfil' ? all.filter(function(e){ return e.source === 'perfil'; }) :
+    f === 'contacto' ? all.filter(function(e){ return e.source === 'manual'; }) :
+    f === 'has-email' ? all.filter(function(e){ return e.email; }) :
+    f === 'has-phone' ? all.filter(function(e){ return e.phone; }) :
+    f === 'has-linkedin' ? all.filter(function(e){ return e.linkedin; }) : all;
+  const filtered = q ? prefiltered.filter(e =>
     e.name.toLowerCase().includes(q) ||
     (e.role || '').toLowerCase().includes(q) ||
     (e.company || '').toLowerCase().includes(q)
@@ -3241,9 +3244,7 @@ document.addEventListener('DOMContentLoaded', () => {
 document.getElementById('profile-modal').addEventListener('click', function(e) {
   if (e.target === e.currentTarget) closeProfileModal();
 });
-document.getElementById('apikey-overlay').addEventListener('click', function(e) {
-  if (e.target === e.currentTarget && state.apiKey) document.getElementById('apikey-overlay').classList.remove('open');
-});
+// apikey modal removed - auth handled server-side
 
 // Safe init with error boundary
 try {
