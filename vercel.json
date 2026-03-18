@@ -1,11 +1,27 @@
 {
   "version": 2,
-  "functions": {
-    "claude.js": { "runtime": "nodejs18.x" }
-  },
+  "builds": [
+    {
+      "src": "claude.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "*.html",
+      "use": "@vercel/static"
+    }
+  ],
   "routes": [
-    { "src": "/api/claude", "dest": "/claude.js" },
-    { "src": "/app.html", "dest": "/app.html" },
-    { "src": "/", "dest": "/index.html" }
+    {
+      "src": "/api/claude",
+      "dest": "/claude.js"
+    },
+    {
+      "src": "/app.html",
+      "dest": "/app.html"
+    },
+    {
+      "src": "/",
+      "dest": "/index.html"
+    }
   ]
 }
