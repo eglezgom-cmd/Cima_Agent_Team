@@ -3241,7 +3241,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Close modals on overlay click
-document.getElementById('profile-modal').addEventListener('click', function(e) {
+var _pm = document.getElementById('profile-modal');
+if (_pm) _pm.addEventListener('click', function(e) {
   if (e.target === e.currentTarget) closeProfileModal();
 });
 // apikey modal removed - auth handled server-side
